@@ -59,10 +59,62 @@ flutter:
   uses-material-design: true
 
   # To add assets to your application, add an assets section, like this:
-  # assets:
-  #   - images/a_dot_burr.jpeg
-  #   - images/a_dot_ham.jpeg
-
+  assets:
+     - assets/background.png
+     - assets/blank_profile.png
+     - assets/card_back.png
+     - assets/cards/club_ace.png
+     - assets/cards/club_eight.png
+     - assets/cards/club_five.png
+     - assets/cards/club_four.png
+     - assets/cards/club_jack.png
+     - assets/cards/club_king.png
+     - assets/cards/club_nine.png
+     - assets/cards/club_queen.png
+     - assets/cards/club_seven.png
+     - assets/cards/club_six.png
+     - assets/cards/club_ten.png
+     - assets/cards/club_three.png
+     - assets/cards/club_two.png
+     - assets/cards/diamond_ace.png
+     - assets/cards/diamond_eight.png
+     - assets/cards/diamond_five.png
+     - assets/cards/diamond_four.png
+     - assets/cards/diamond_jack.png
+     - assets/cards/diamond_king.png
+     - assets/cards/diamond_nine.png
+     - assets/cards/diamond_queen.png
+     - assets/cards/diamond_seven.png
+     - assets/cards/diamond_six.png
+     - assets/cards/diamond_ten.png
+     - assets/cards/diamond_three.png
+     - assets/cards/diamond_two.png
+     - assets/cards/heart_ace.png
+     - assets/cards/heart_eight.png
+     - assets/cards/heart_five.png
+     - assets/cards/heart_four.png
+     - assets/cards/heart_jack.png
+     - assets/cards/heart_king.png
+     - assets/cards/heart_nine.png
+     - assets/cards/heart_queen.png
+     - assets/cards/heart_seven.png
+     - assets/cards/heart_six.png
+     - assets/cards/heart_ten.png
+     - assets/cards/heart_three.png
+     - assets/cards/heart_two.png
+     - assets/cards/spade_ace.png
+     - assets/cards/spade_two.png
+     - assets/cards/spade_three.png
+     - assets/cards/spade_four.png
+     - assets/cards/spade_five.png
+     - assets/cards/spade_six.png
+     - assets/cards/spade_seven.png
+     - assets/cards/spade_eight.png
+     - assets/cards/spade_nine.png
+     - assets/cards/spade_ten.png
+     - assets/cards/spade_jack.png
+     - assets/cards/spade_queen.png
+     - assets/cards/spade_king.png
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware
 

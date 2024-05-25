@@ -1,33 +1,36 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter_application_1/game_page.dart';
-import 'signup_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-class LoginPage extends StatefulWidget {
+class SignUpPage extends StatefulWidget {
   @override
-  _LoginPageState createState() => _LoginPageState();
+  _SignUpPageState createState() => _SignUpPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _SignUpPageState extends State<SignUpPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   String _errorMessage = '';
 
-  Future<void> _login() async {
+  Future<void> _signUp() async {
     try {
-      final UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      final UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: _emailController.text,
         password: _passwordController.text,
       );
-      print("User signed in: ${userCredential.user?.email}");
-      setState(() {
-        _errorMessage = 'Login successful!';
+
+      // Add user data to Firestore
+      await _firestore.collection('users').doc(userCredential.user?.uid).set({
+        'email': _emailController.text,
+        'createdAt': Timestamp.now(),
       });
-      Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => GamePage()),
-    );
+
+      print("User signed up: ${userCredential.user?.email}");
+      setState(() {
+        _errorMessage = 'Sign-up successful!';
+      });
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorMessage = e.message ?? 'An error occurred';
@@ -35,18 +38,11 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-  void _navigateToSignUp() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => SignUpPage()),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Login Page'),
+        title: Text('Sign Up Page'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -70,12 +66,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             SizedBox(height: 32.0),
             ElevatedButton(
-              onPressed: _login,
-              child: Text('Login'),
-            ),
-            SizedBox(height: 48.0),
-            ElevatedButton(
-              onPressed: _navigateToSignUp,
+              onPressed: _signUp,
               child: Text('Sign Up'),
             ),
             SizedBox(height: 16.0),

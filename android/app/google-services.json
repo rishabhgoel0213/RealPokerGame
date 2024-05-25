@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "838732447019",
+    "project_id": "realpokergamedb",
+    "storage_bucket": "realpokergamedb.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:838732447019:android:d0d71e72d87938be2e996e",
+        "android_client_info": {
+          "package_name": "com.thisispoker.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAo7aSRiTJ2lEkF24wvFPbejsNTtXJjQaU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

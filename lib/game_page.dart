@@ -140,6 +140,8 @@ class _GamePageState extends State<GamePage> {
       userBet = currentBet;
     });
 
+    _opponentCall();
+
     if (opponentCalled) {
       _proceedToNextRound();
     }
@@ -167,18 +169,8 @@ class _GamePageState extends State<GamePage> {
       userCalled = true;
       opponentCalled = false;
     });
-  }
 
-  void _opponentRaise(int amount) {
-    setState(() {
-      opponentCalled = true;
-      opponentRaised = true;
-      currentBet += amount;
-      opponentStackSize -= (currentBet - opponentBet);
-      opponentBet = currentBet;
-      opponentCalled = true;
-      userCalled = false;
-    });
+    _opponentCall();
   }
 
   void _proceedToNextRound() {
@@ -232,25 +224,6 @@ class _GamePageState extends State<GamePage> {
                   Image.asset(opponentCards[1], width: 50), // Example opponent card
                   SizedBox(height: 8),
                   Text('Stack Size: $opponentStackSize'),
-                  if (!gameEnded && !opponentCalled && userCalled) // Show the call button for the opponent if user has called
-                    Row(
-                      children: [
-                        ElevatedButton(
-                          onPressed: _opponentCall,
-                          child: Text('Call'),
-                        ),
-                        SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: _opponentFold,
-                          child: Text('Fold'),
-                        ),
-                        SizedBox(width: 8),
-                        ElevatedButton(
-                          onPressed: () => _opponentRaise(50),
-                          child: Text('Raise 50'),
-                        ),
-                      ],
-                    ),
                 ],
               ),
             ),

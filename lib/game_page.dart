@@ -10,42 +10,76 @@ class GamePage extends StatefulWidget {
 
 class _GamePageState extends State<GamePage> {
   final List<String> cardAssets = [
-    'assets/cards/club_ace.png', 'assets/cards/club_two.png',
-    'assets/cards/club_three.png', 'assets/cards/club_four.png',
-    'assets/cards/club_five.png', 'assets/cards/club_six.png',
-    'assets/cards/club_seven.png', 'assets/cards/club_eight.png',
-    'assets/cards/club_nine.png', 'assets/cards/club_ten.png',
-    'assets/cards/club_jack.png', 'assets/cards/club_queen.png',
-    'assets/cards/club_king.png', 'assets/cards/diamond_ace.png',
-    'assets/cards/diamond_two.png', 'assets/cards/diamond_three.png',
-    'assets/cards/diamond_four.png', 'assets/cards/diamond_five.png',
-    'assets/cards/diamond_six.png', 'assets/cards/diamond_seven.png',
-    'assets/cards/diamond_eight.png', 'assets/cards/diamond_nine.png',
-    'assets/cards/diamond_ten.png', 'assets/cards/diamond_jack.png',
-    'assets/cards/diamond_queen.png', 'assets/cards/diamond_king.png',
-    'assets/cards/heart_ace.png', 'assets/cards/heart_two.png',
-    'assets/cards/heart_three.png', 'assets/cards/heart_four.png',
-    'assets/cards/heart_five.png', 'assets/cards/heart_six.png',
-    'assets/cards/heart_seven.png', 'assets/cards/heart_eight.png',
-    'assets/cards/heart_nine.png', 'assets/cards/heart_ten.png',
-    'assets/cards/heart_jack.png', 'assets/cards/heart_queen.png',
-    'assets/cards/heart_king.png', 'assets/cards/spade_ace.png',
-    'assets/cards/spade_two.png', 'assets/cards/spade_three.png',
-    'assets/cards/spade_four.png', 'assets/cards/spade_king.png',
-    'assets/cards/spade_five.png', 'assets/cards/spade_six.png',
-    'assets/cards/spade_seven.png', 'assets/cards/spade_eight.png',
-    'assets/cards/spade_nine.png', 'assets/cards/spade_ten.png',
-    'assets/cards/spade_jack.png', 'assets/cards/spade_queen.png'  
+    'assets/cards/club_ace.png',
+    'assets/cards/club_two.png',
+    'assets/cards/club_three.png',
+    'assets/cards/club_four.png',
+    'assets/cards/club_five.png',
+    'assets/cards/club_six.png',
+    'assets/cards/club_seven.png',
+    'assets/cards/club_eight.png',
+    'assets/cards/club_nine.png',
+    'assets/cards/club_ten.png',
+    'assets/cards/club_jack.png',
+    'assets/cards/club_queen.png',
+    'assets/cards/club_king.png',
+    'assets/cards/diamond_ace.png',
+    'assets/cards/diamond_two.png',
+    'assets/cards/diamond_three.png',
+    'assets/cards/diamond_four.png',
+    'assets/cards/diamond_five.png',
+    'assets/cards/diamond_six.png',
+    'assets/cards/diamond_seven.png',
+    'assets/cards/diamond_eight.png',
+    'assets/cards/diamond_nine.png',
+    'assets/cards/diamond_ten.png',
+    'assets/cards/diamond_jack.png',
+    'assets/cards/diamond_queen.png',
+    'assets/cards/diamond_king.png',
+    'assets/cards/heart_ace.png',
+    'assets/cards/heart_two.png',
+    'assets/cards/heart_three.png',
+    'assets/cards/heart_four.png',
+    'assets/cards/heart_five.png',
+    'assets/cards/heart_six.png',
+    'assets/cards/heart_seven.png',
+    'assets/cards/heart_eight.png',
+    'assets/cards/heart_nine.png',
+    'assets/cards/heart_ten.png',
+    'assets/cards/heart_jack.png',
+    'assets/cards/heart_queen.png',
+    'assets/cards/heart_king.png',
+    'assets/cards/spade_ace.png',
+    'assets/cards/spade_two.png',
+    'assets/cards/spade_three.png',
+    'assets/cards/spade_four.png',
+    'assets/cards/spade_five.png',
+    'assets/cards/spade_six.png',
+    'assets/cards/spade_seven.png',
+    'assets/cards/spade_eight.png',
+    'assets/cards/spade_nine.png',
+    'assets/cards/spade_ten.png',
+    'assets/cards/spade_jack.png',
+    'assets/cards/spade_queen.png',
+    'assets/cards/spade_king.png'
   ];
 
   late List<String> commonBank;
   late List<String> playerCards;
   late List<String> opponentCards;
   late List<String> generatedCards;
-  int generateButtonPressedCount = 0;
-
+  bool userCalled = false;
+  bool opponentCalled = false;
+  bool userRaised = false;
+  bool opponentRaised = false;
   int userStackSize = 500;
   int opponentStackSize = 500;
+  bool gameEnded = false;
+  String winner = '';
+  int currentBet = 0;
+  int userBet = 0;
+  int opponentBet = 0;
+  int round = 0;
 
   @override
   void initState() {
@@ -56,6 +90,16 @@ class _GamePageState extends State<GamePage> {
   void _initGame() {
     commonBank = List.from(cardAssets);
     generatedCards = [];
+    userCalled = false;
+    opponentCalled = false;
+    userRaised = false;
+    opponentRaised = false;
+    gameEnded = false;
+    winner = '';
+    currentBet = 0;
+    userBet = 0;
+    opponentBet = 0;
+    round = 0;
     _dealCards();
   }
 
@@ -75,24 +119,95 @@ class _GamePageState extends State<GamePage> {
   }
 
   void _generateCard() {
-    if (generateButtonPressedCount < 3) {
+    if (generatedCards.length < 5) {
       final random = Random();
+      int numCards = round == 0 ? 3 : 1;
 
-      // Number of cards to generate based on button press count
-      int numberOfCardsToGenerate = generateButtonPressedCount == 0 ? 3 : 1;
-
-      // Generate cards
-      for (int i = 0; i < numberOfCardsToGenerate; i++) {
+      for (int i = 0; i < numCards; i++) {
+        if (generatedCards.length >= 5) break;
         int randomCardIndex = random.nextInt(commonBank.length);
-        generatedCards.add(commonBank[randomCardIndex]);
-        commonBank.removeAt(randomCardIndex); // Remove the generated card from the common bank
+        generatedCards.add(commonBank.removeAt(randomCardIndex));
       }
 
-      // Increment button press count
-      setState(() {
-        generateButtonPressedCount++;
-      });
+      if (round < 3) round++;
     }
+  }
+
+  void _userCall() {
+    setState(() {
+      userCalled = true;
+      userStackSize -= (currentBet - userBet);
+      userBet = currentBet;
+    });
+
+    if (opponentCalled) {
+      _proceedToNextRound();
+    }
+  }
+
+  void _opponentCall() {
+    setState(() {
+      opponentCalled = true;
+      opponentStackSize -= (currentBet - opponentBet);
+      opponentBet = currentBet;
+    });
+
+    if (userCalled) {
+      _proceedToNextRound();
+    }
+  }
+
+  void _userRaise(int amount) {
+    setState(() {
+      userCalled = true;
+      userRaised = true;
+      currentBet += amount;
+      userStackSize -= (currentBet - userBet);
+      userBet = currentBet;
+      userCalled = true;
+      opponentCalled = false;
+    });
+  }
+
+  void _opponentRaise(int amount) {
+    setState(() {
+      opponentCalled = true;
+      opponentRaised = true;
+      currentBet += amount;
+      opponentStackSize -= (currentBet - opponentBet);
+      opponentBet = currentBet;
+      opponentCalled = true;
+      userCalled = false;
+    });
+  }
+
+  void _proceedToNextRound() {
+    setState(() {
+      userCalled = false;
+      opponentCalled = false;
+      userRaised = false;
+      opponentRaised = false;
+      userBet = 0;
+      opponentBet = 0;
+      currentBet = 0;
+    });
+    _generateCard();
+  }
+
+  void _userFold() {
+    setState(() {
+      gameEnded = true;
+      winner = 'Opponent';
+      opponentStackSize += (userBet + opponentBet);
+    });
+  }
+
+  void _opponentFold() {
+    setState(() {
+      gameEnded = true;
+      winner = 'User';
+      userStackSize += (userBet + opponentBet);
+    });
   }
 
   @override
@@ -117,6 +232,25 @@ class _GamePageState extends State<GamePage> {
                   Image.asset(opponentCards[1], width: 50), // Example opponent card
                   SizedBox(height: 8),
                   Text('Stack Size: $opponentStackSize'),
+                  if (!gameEnded && !opponentCalled && userCalled) // Show the call button for the opponent if user has called
+                    Row(
+                      children: [
+                        ElevatedButton(
+                          onPressed: _opponentCall,
+                          child: Text('Call'),
+                        ),
+                        SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: _opponentFold,
+                          child: Text('Fold'),
+                        ),
+                        SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () => _opponentRaise(50),
+                          child: Text('Raise 50'),
+                        ),
+                      ],
+                    ),
                 ],
               ),
             ),
@@ -140,15 +274,30 @@ class _GamePageState extends State<GamePage> {
               children: generatedCards.map((card) => Image.asset(card, width: 50)).toList(),
             ),
           ),
-          // Generate button
-          Positioned(
-            top: MediaQuery.of(context).size.height - 100,
-            left: MediaQuery.of(context).size.width / 2 - 50,
-            child: ElevatedButton(
-              onPressed: _generateCard,
-              child: Text('Generate'),
+          // Call, Fold, and Raise buttons
+          if (!gameEnded)
+            Positioned(
+              top: MediaQuery.of(context).size.height - 100,
+              left: MediaQuery.of(context).size.width / 2 - 50,
+              child: Row(
+                children: [
+                  ElevatedButton(
+                    onPressed: generatedCards.length < 5 ? _userCall : null,
+                    child: Text('Call'),
+                  ),
+                  SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: _userFold,
+                    child: Text('Fold'),
+                  ),
+                  SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () => _userRaise(50),
+                    child: Text('Raise 50'),
+                  ),
+                ],
+              ),
             ),
-          ),
           // User stack size
           Positioned(
             bottom: 10,
@@ -159,6 +308,18 @@ class _GamePageState extends State<GamePage> {
               child: Text('Stack Size: $userStackSize'),
             ),
           ),
+          // Display winner if game ended
+          if (gameEnded)
+            Center(
+              child: Container(
+                color: Colors.white,
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  '$winner wins!',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
         ],
       ),
     );

@@ -170,9 +170,13 @@ class _GamePageState extends State<GamePageTemp> {
 
     if (userHighestCard == opponentHighestCard) {
       // It's a tie
-      winner = 'It\'s a tie!';
+      setState(() {
+        winner = 'It\'s a tie!';
+      });
     } else {
-      winner = 'Player';
+      setState(() {
+        winner = 'Player';
+      });
     }
   } else {
     // Hands are of different types, compare based on the hierarchy
@@ -194,13 +198,19 @@ class _GamePageState extends State<GamePageTemp> {
 
     if (userHandIndex < opponentHandIndex) {
       // Player's hand type is higher in the hierarchy
-      winner = 'Player';
+      setState(() {
+        winner = 'Player';
+      });
     } else {
       // Opponent's hand type is higher in the hierarchy
-      winner = 'Opponent';
+      setState(() {
+        winner = 'Opponent';
+      });
     }
   }
-  gameEnded = true;
+  setState(() {
+    gameEnded = true;
+    });
 }
 
   void _userCall() {
@@ -360,7 +370,7 @@ class _GamePageState extends State<GamePageTemp> {
           if (gameEnded)
             Center(
               child: Container(
-                color: Colors.white,
+                color: Colors.black,
                 padding: const EdgeInsets.all(16.0),
                 child: Text(
                   '$winner wins!',

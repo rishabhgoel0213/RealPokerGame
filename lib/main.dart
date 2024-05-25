@@ -4,6 +4,8 @@ import 'game_page_temp.dart';  // Import the Temp GamePage
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'login_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
+
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,16 +25,28 @@ class MyApp extends StatelessWidget {
 }
 
 class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+  const MyHomePage({Key? key, required this.title, required this.userId}) : super(key: key);
 
   final String title;
+  final String userId;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<MyHomePage> createState() => _MyHomePageState(userId);
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  void _redirectToGamePage(BuildContext context) {
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore instance
+  final String userId;
+
+  _MyHomePageState(this.userId);
+
+
+  void _redirectToGamePage(BuildContext context) async {
+    // Update the searchingForMatch value in the database to true
+    await _firestore.collection('users').doc(userId).update({
+      'searchingForMatch': true,
+    });
+    
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const GamePage()),

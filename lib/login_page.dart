@@ -21,14 +21,24 @@ class _LoginPageState extends State<LoginPage> {
         email: _emailController.text,
         password: _passwordController.text,
       );
-      print("User signed in: ${userCredential.user?.email}");
+
+      // Get the user ID
+      final String userId = userCredential.user?.uid ?? '';
+
+      // Check if the user ID is not empty
+      if (userId.isNotEmpty) {
+        print("User ID: $userId");
+
+        // Navigate to home page with the user ID
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => MyHomePage(title: "This Is Poker", userId: userId)),
+        );
+      }
+
       setState(() {
         _errorMessage = 'Login successful!';
       });
-      Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => MyHomePage(title: "This Is Poker")),
-    );
     } on FirebaseAuthException catch (e) {
       setState(() {
         _errorMessage = e.message ?? 'An error occurred';

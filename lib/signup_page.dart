@@ -24,7 +24,8 @@ class _SignUpPageState extends State<SignUpPage> {
       // Add user data to Firestore
       await _firestore.collection('users').doc(userCredential.user?.uid).set({
         'email': _emailController.text,
-        'createdAt': Timestamp.now(),
+        'searchingForMatch': false,
+        'match_id': null
       });
 
       print("User signed up: ${userCredential.user?.email}");

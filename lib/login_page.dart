@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_application_1/game_page.dart';
+import 'package:flutter_application_1/main.dart';
 import 'signup_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -26,7 +27,7 @@ class _LoginPageState extends State<LoginPage> {
       });
       Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => GamePage()),
+      MaterialPageRoute(builder: (context) => MyHomePage(title: "This Is Poker")),
     );
     } on FirebaseAuthException catch (e) {
       setState(() {

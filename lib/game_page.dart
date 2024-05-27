@@ -2,13 +2,18 @@ import 'package:flutter/material.dart';
 import 'dart:math';
 
 class GamePage extends StatefulWidget {
-  const GamePage({Key? key}) : super(key: key);
+  const GamePage({Key? key, required this.matchId}) : super(key: key);
+
+  final String matchId;
 
   @override
-  _GamePageState createState() => _GamePageState();
+  _GamePageState createState() => _GamePageState(matchId: matchId);
 }
 
 class _GamePageState extends State<GamePage> {
+
+  _GamePageState({required this.matchId});
+
   final List<String> cardAssets = [
     'assets/cards/club_ace.png',
     'assets/cards/club_two.png',
@@ -64,6 +69,7 @@ class _GamePageState extends State<GamePage> {
     'assets/cards/spade_king.png'
   ];
 
+  final String matchId;
   late List<String> commonBank;
   late List<String> playerCards;
   late List<String> opponentCards;

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'game_page.dart';  // Import the GamePage
 import 'game_page_temp.dart';  // Import the Temp GamePage
@@ -46,11 +48,22 @@ class _MyHomePageState extends State<MyHomePage> {
     await _firestore.collection('users').doc(userId).update({
       'searchingForMatch': true,
     });
-    
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const GamePage()),
-    );
+
+    // Create a timer to periodically check if searchingForMatch becomes false
+    Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
+      // Fetch the document
+      DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();
+
+      // Check if the document exists and if searchingForMatch is false
+      if (snapshot.exists && !(snapshot.data()!['searchingForMatch'] ?? true)) {
+        // If searchingForMatch is false, cancel the timer and navigate to the GamePage
+        timer.cancel();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => GamePage(matchId: snapshot.data()!['matchId'],)),
+        );
+      }
+    });
   }
 
   void _redirectToTempGamePage(BuildContext context) {

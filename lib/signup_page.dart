@@ -25,7 +25,8 @@ class _SignUpPageState extends State<SignUpPage> {
       await _firestore.collection('users').doc(userCredential.user?.uid).set({
         'email': _emailController.text,
         'searchingForMatch': false,
-        'match_id': null
+        'match_id': null,
+        'rating': 1000
       });
 
       print("User signed up: ${userCredential.user?.email}");

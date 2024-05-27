@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:math';
 
-// Define a tuple class
 class Tuple<X, Y> {
   final X item1;
   final Y item2;
@@ -87,6 +87,7 @@ class _GamePageState extends State<GamePageTemp> {
   int userBet = 0;
   int opponentBet = 0;
   int round = 0;
+  int countdown = 5;
 
   @override
   void initState() {
@@ -141,77 +142,108 @@ class _GamePageState extends State<GamePageTemp> {
   }
 
   void _evaluateHand() {
-  // Scraping GUI titles and converting them into tuples
-  List<String> userCardTitles = playerCards.map((card) => card.split('/').last.split('.').first).toList();
-  List<Tuple<String, String>> userHand = userCardTitles.map((title) {
-    List<String> parts = title.split('_');
-    return Tuple(parts.first, parts.last);
-  }).toList();
+    List<String> userCardTitles = playerCards.map((card) => card.split('/').last.split('.').first).toList();
+    List<String> opponentCardTitles = opponentCards.map((card) => card.split('/').last.split('.').first).toList();
+    List<String> communityCardTitles = generatedCards.map((card) => card.split('/').last.split('.').first).toList();
 
-  List<String> opponentCardTitles = opponentCards.map((card) => card.split('/').last.split('.').first).toList();
-  List<Tuple<String, String>> opponentHand = opponentCardTitles.map((title) {
-    List<String> parts = title.split('_');
-    return Tuple(parts.first, parts.last);
-  }).toList();
+    List<Tuple<String, String>> userHand = userCardTitles.map((title) {
+      List<String> parts = title.split('_');
+      return Tuple(parts.first, parts.last);
+    }).toList();
 
-  var userPokerHand = PokerHand(userHand);
-  var opponentPokerHand = PokerHand(opponentHand);
+    List<Tuple<String, String>> opponentHand = opponentCardTitles.map((title) {
+      List<String> parts = title.split('_');
+      return Tuple(parts.first, parts.last);
+    }).toList();
 
-  String userHandType = userPokerHand.evaluateHand();
-  String opponentHandType = opponentPokerHand.evaluateHand();
+    List<Tuple<String, String>> communityHand = communityCardTitles.map((title) {
+      List<String> parts = title.split('_');
+      return Tuple(parts.first, parts.last);
+    }).toList();
 
-  // Compare hands
-  if (userHandType == opponentHandType) {
-    // Hands are of the same type, compare highest cards
-    // You may implement tie-breaking logic here if needed
-    // For simplicity, let's assume the player with the highest card wins in case of a tie
-    String userHighestCard = userHand.map((card) => card.item2).reduce((a, b) => a.compareTo(b) > 0 ? a : b);
-    String opponentHighestCard = opponentHand.map((card) => card.item2).reduce((a, b) => a.compareTo(b) > 0 ? a : b);
+    PokerHand userPokerHand = PokerHand([...userHand, ...communityHand]);
+    PokerHand opponentPokerHand = PokerHand([...opponentHand, ...communityHand]);
 
-    if (userHighestCard == opponentHighestCard) {
-      // It's a tie
+    String userBestHand = userPokerHand.evaluateHand();
+    String opponentBestHand = opponentPokerHand.evaluateHand();
+
+    if (userBestHand == opponentBestHand) {
       setState(() {
         winner = 'It\'s a tie!';
       });
     } else {
-      setState(() {
-        winner = 'Player';
-      });
-    }
-  } else {
-    // Hands are of different types, compare based on the hierarchy
-    List<String> handHierarchy = [
-      "Royal Flush",
-      "Straight Flush",
-      "Four of a Kind",
-      "Full House",
-      "Flush",
-      "Straight",
-      "Three of a Kind",
-      "Two Pair",
-      "One Pair",
-      "High Card"
-    ];
+      List<String> handHierarchy = [
+        "Royal Flush",
+        "Straight Flush",
+        "Four of a Kind",
+        "Full House",
+        "Flush",
+        "Straight",
+        "Three of a Kind",
+        "Two Pair",
+        "One Pair",
+        "High Card"
+      ];
 
-    int userHandIndex = handHierarchy.indexOf(userHandType);
-    int opponentHandIndex = handHierarchy.indexOf(opponentHandType);
+      int userHandIndex = handHierarchy.indexOf(userBestHand);
+      int opponentHandIndex = handHierarchy.indexOf(opponentBestHand);
 
-    if (userHandIndex < opponentHandIndex) {
-      // Player's hand type is higher in the hierarchy
-      setState(() {
-        winner = 'Player';
-      });
-    } else {
-      // Opponent's hand type is higher in the hierarchy
-      setState(() {
-        winner = 'Opponent';
-      });
+      if (userHandIndex < opponentHandIndex) {
+        setState(() {
+          winner = 'Player';
+        });
+      } else {
+        setState(() {
+          winner = 'Opponent';
+        });
+      }
     }
-  }
-  setState(() {
-    gameEnded = true;
+
+    setState(() {
+      gameEnded = true;
     });
-}
+    _showGameEndDialog();
+  }
+
+  void _showGameEndDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        Timer.periodic(Duration(seconds: 5), (Timer timer) {
+          setState(() {
+            if (countdown == 0) {
+              timer.cancel();
+              Navigator.of(context).pop();
+              _initGame();
+            } else {
+              countdown--;
+            }
+          });
+        });
+        return AlertDialog(
+          title: Text('$winner wins!'),
+          content: Text('Play again in $countdown seconds.'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _initGame();
+              },
+              child: Text('Play Again'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.pushNamed(context, '/');
+              },
+              child: Text('Quit'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   void _userCall() {
     setState(() {
@@ -254,20 +286,21 @@ class _GamePageState extends State<GamePageTemp> {
   }
 
   void _proceedToNextRound() {
-    if (userCalled && opponentCalled && generatedCards.length == 5) {
-      _evaluateHand();
-    }
-    else {
-      setState(() {
-      userCalled = false;
-      opponentCalled = false;
-      userRaised = false;
-      opponentRaised = false;
-      userBet = 0;
-      opponentBet = 0;
-      currentBet = 0;
-      });
-      _generateCard();
+    if (userCalled && opponentCalled) {
+      if (generatedCards.length == 5) {
+        _evaluateHand();
+      } else {
+        _generateCard();
+        setState(() {
+          userCalled = false;
+          opponentCalled = false;
+          userRaised = false;
+          opponentRaised = false;
+          userBet = 0;
+          opponentBet = 0;
+          currentBet = 0;
+        });
+      }
     }
   }
 
@@ -277,6 +310,7 @@ class _GamePageState extends State<GamePageTemp> {
       winner = 'Opponent';
       opponentStackSize += (userBet + opponentBet);
     });
+    _showGameEndDialog();
   }
 
   void _opponentFold() {
@@ -285,6 +319,7 @@ class _GamePageState extends State<GamePageTemp> {
       winner = 'User';
       userStackSize += (userBet + opponentBet);
     });
+    _showGameEndDialog();
   }
 
   @override
@@ -350,7 +385,7 @@ class _GamePageState extends State<GamePageTemp> {
                   ),
                   SizedBox(width: 8),
                   ElevatedButton(
-                    onPressed: generatedCards.length == 5 && userCalled && opponentCalled ? null: () => _userRaise(50),
+                    onPressed: generatedCards.length == 5 && userCalled && opponentCalled ? null : () => _userRaise(50),
                     child: Text('Raise 50'),
                   ),
                 ],
@@ -366,31 +401,17 @@ class _GamePageState extends State<GamePageTemp> {
               child: Text('Stack Size: $userStackSize'),
             ),
           ),
-          // Display winner if game ended
-          if (gameEnded)
-            Center(
-              child: Container(
-                color: Colors.black,
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  '$winner wins!',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
         ],
       ),
     );
   }
 }
 
-// Define a class to represent a poker hand
 class PokerHand {
   final List<Tuple<String, String>> cards;
 
   PokerHand(this.cards);
 
-  // Function to evaluate the hand
   String evaluateHand() {
     if (_isRoyalFlush()) return "Royal Flush";
     if (_isStraightFlush()) return "Straight Flush";
@@ -404,9 +425,8 @@ class PokerHand {
     return "High Card";
   }
 
-  // Helper functions to check different hand types
   bool _isRoyalFlush() {
-    return _isStraightFlush() && cards[0].item2 == '10';
+    return _isStraightFlush() && cards.any((card) => card.item2 == 'ace');
   }
 
   bool _isStraightFlush() {
@@ -429,9 +449,10 @@ class PokerHand {
   }
 
   bool _isStraight() {
-    var values = cards.map((card) => card.item2).toList()..sort();
+    var values = cards.map((card) => _cardValue(card.item2)).toList();
+    values.sort();
     for (var i = 0; i < values.length - 1; i++) {
-      if (int.parse(values[i + 1]) - int.parse(values[i]) != 1) {
+      if (values[i + 1] - values[i] != 1) {
         return false;
       }
     }
@@ -455,7 +476,6 @@ class PokerHand {
     return pairs == 1;
   }
 
-  // Helper function to count the occurrences of each card value
   Map<String, int> _getValueCount() {
     var countMap = <String, int>{};
     for (var card in cards) {
@@ -463,5 +483,38 @@ class PokerHand {
       countMap[value] = (countMap[value] ?? 0) + 1;
     }
     return countMap;
+  }
+
+  int _cardValue(String value) {
+    switch (value) {
+      case 'two':
+        return 2;
+      case 'three':
+        return 3;
+      case 'four':
+        return 4;
+      case 'five':
+        return 5;
+      case 'six':
+        return 6;
+      case 'seven':
+        return 7;
+      case 'eight':
+        return 8;
+      case 'nine':
+        return 9;
+      case 'ten':
+        return 10;
+      case 'jack':
+        return 11;
+      case 'queen':
+        return 12;
+      case 'king':
+        return 13;
+      case 'ace':
+        return 14;
+      default:
+        return 0;
+    }
   }
 }

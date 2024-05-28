@@ -87,7 +87,6 @@ class _GamePageState extends State<GamePageTemp> {
   int userBet = 0;
   int opponentBet = 0;
   int round = 0;
-  int countdown = 5;
 
   @override
   void initState() {
@@ -108,6 +107,8 @@ class _GamePageState extends State<GamePageTemp> {
     userBet = 0;
     opponentBet = 0;
     round = 0;
+    userStackSize = 500;
+    opponentStackSize = 500;
     _dealCards();
   }
 
@@ -210,34 +211,26 @@ class _GamePageState extends State<GamePageTemp> {
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
-        Timer.periodic(Duration(seconds: 5), (Timer timer) {
-          setState(() {
-            if (countdown == 0) {
-              timer.cancel();
-              Navigator.of(context).pop();
-              _initGame();
-            } else {
-              countdown--;
-            }
-          });
-        });
         return AlertDialog(
           title: Text('$winner wins!'),
-          content: Text('Play again in $countdown seconds.'),
+          content: const Text('Would you like to play again or quit?'),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                _initGame();
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(builder: (context) => const GamePageTemp()),
+                );
               },
-              child: Text('Play Again'),
+              child: const Text('Play Again'),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 Navigator.pushNamed(context, '/');
               },
-              child: Text('Quit'),
+              child: const Text('Quit'),
             ),
           ],
         );
@@ -342,7 +335,7 @@ class _GamePageState extends State<GamePageTemp> {
                   const Text('Opponent'),
                   Image.asset(opponentCards[0], width: 50), // Example opponent card
                   Image.asset(opponentCards[1], width: 50), // Example opponent card
-                  SizedBox(height: 8),
+                  const SizedBox(height: 8),
                   Text('Stack Size: $opponentStackSize'),
                 ],
               ),
@@ -376,17 +369,17 @@ class _GamePageState extends State<GamePageTemp> {
                 children: [
                   ElevatedButton(
                     onPressed: generatedCards.length <= 5 && !userCalled && !opponentCalled ? _userCall : null,
-                    child: Text('Call'),
+                    child: const Text('Call'),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: generatedCards.length == 5 && userCalled && opponentCalled ? null : _userFold,
-                    child: Text('Fold'),
+                    child: const Text('Fold'),
                   ),
-                  SizedBox(width: 8),
+                  const SizedBox(width: 8),
                   ElevatedButton(
                     onPressed: generatedCards.length == 5 && userCalled && opponentCalled ? null : () => _userRaise(50),
-                    child: Text('Raise 50'),
+                    child: const Text('Raise 50'),
                   ),
                 ],
               ),

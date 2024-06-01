@@ -1,13 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'game_page.dart';  // Import the GamePage
-import 'game_page_temp.dart';  // Import the Temp GamePage
+import 'game_page.dart';  
+import 'game_page_temp.dart';  
+import 'friends.dart';  
+import 'learn.dart';  // Import the Learn page
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'login_page.dart';
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import Firestore
-
+import 'package:cloud_firestore/cloud_firestore.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -37,26 +38,20 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance; // Firestore instance
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; 
   final String userId;
 
   _MyHomePageState(this.userId);
 
-
   void _redirectToGamePage(BuildContext context) async {
-    // Update the searchingForMatch value in the database to true
     await _firestore.collection('users').doc(userId).update({
       'searchingForMatch': true,
     });
 
-    // Create a timer to periodically check if searchingForMatch becomes false
     Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
-      // Fetch the document
       DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();
 
-      // Check if the document exists and if searchingForMatch is false
       if (snapshot.exists && !(snapshot.data()!['searchingForMatch'] ?? true)) {
-        // If searchingForMatch is false, cancel the timer and navigate to the GamePage
         timer.cancel();
         Navigator.push(
           context,
@@ -70,6 +65,20 @@ class _MyHomePageState extends State<MyHomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const GamePageTemp()),
+    );
+  }
+
+  void _redirectToFriendsPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => FriendsPage(userId: userId)), 
+    );
+  }
+
+  void _redirectToLearnPage(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => LearnPage(userId: userId)), // Redirect to Learn Page
     );
   }
 
@@ -87,10 +96,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   // Navigate to Stats Page
                   break;
                 case 'Friends':
-                  // Navigate to Friends Page
+                  _redirectToFriendsPage(context); // Redirect to Friends Page
                   break;
                 case 'Learn':
-                  // Navigate to Learn Page
+                  _redirectToLearnPage(context); // Redirect to Learn Page
                   break;
               }
             },

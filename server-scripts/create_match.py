@@ -1,11 +1,12 @@
-import os
+import time
+import logging
+import random
 import time
 import uuid
-import random
-import logging
+
 import firebase_admin
 from firebase_admin import credentials, firestore
-from treys import Deck, Evaluator, Card
+from treys import Deck, Card
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

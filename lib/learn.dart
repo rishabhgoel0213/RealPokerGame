@@ -20,16 +20,32 @@ class LearnPage extends StatelessWidget {
               style: TextStyle(fontSize: 24),
             ),
             SizedBox(height: 20),
-            YoutubePlayer(
-              controller: YoutubePlayerController(
-                initialVideoId: 'qjqrayvDYMs', // YouTube video ID
-                flags: YoutubePlayerFlags(
-                  autoPlay: true,
-                  mute: false,
+            YoutubePlayerBuilder(
+              player: YoutubePlayer(
+                controller: YoutubePlayerController(
+                  initialVideoId: 'qjqrayvDYMs', // YouTube video ID
+                  flags: YoutubePlayerFlags(
+                    autoPlay: true,
+                    mute: false,
+                  ),
                 ),
+                showVideoProgressIndicator: true,
+                progressIndicatorColor: Colors.blueAccent,
               ),
-              showVideoProgressIndicator: true,
-              progressIndicatorColor: Colors.blueAccent,
+              builder: (context, player) {
+                return Column(
+                  children: [
+                    player,
+                    SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () {
+                        // Perform any action here when the button is pressed
+                      },
+                      child: Text('Play Video'),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ),

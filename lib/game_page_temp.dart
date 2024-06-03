@@ -87,6 +87,8 @@ class _GamePageState extends State<GamePageTemp> {
   int userBet = 0;
   int opponentBet = 0;
   int round = 0;
+  int buyIn = 500;
+  final TextEditingController raiseController = TextEditingController();
 
   @override
   void initState() {
@@ -109,6 +111,7 @@ class _GamePageState extends State<GamePageTemp> {
     round = 0;
     userStackSize = 500;
     opponentStackSize = 500;
+    raiseController.clear();
     _dealCards();
   }
 
@@ -278,123 +281,144 @@ class _GamePageState extends State<GamePageTemp> {
     _opponentCall();
   }
 
-  void _proceedToNextRound() {
-    if (userCalled && opponentCalled) {
-      if (generatedCards.length == 5) {
-        _evaluateHand();
-      } else {
-        _generateCard();
-        setState(() {
-          userCalled = false;
-          opponentCalled = false;
-          userRaised = false;
-          opponentRaised = false;
-          userBet = 0;
-          opponentBet = 0;
-          currentBet = 0;
-        });
-      }
-    }
-  }
-
   void _userFold() {
     setState(() {
-      gameEnded = true;
       winner = 'Opponent';
-      opponentStackSize += (userBet + opponentBet);
+      gameEnded = true;
     });
     _showGameEndDialog();
   }
 
-  void _opponentFold() {
+  void _proceedToNextRound() {
+    if (generatedCards.length >= 5 && userCalled && opponentCalled) {
+      _evaluateHand();
+    }
+    _generateCard();
+
     setState(() {
-      gameEnded = true;
-      winner = 'User';
-      userStackSize += (userBet + opponentBet);
+      userCalled = false;
+      opponentCalled = false;
+      userRaised = false;
+      opponentRaised = false;
+      userBet = 0;
+      opponentBet = 0;
+      currentBet = 0;
     });
-    _showGameEndDialog();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Game Page'),
+        title: const Text('Poker Game'),
       ),
-      body: Stack(
-        children: [
-          // Opponent
-          Positioned(
-            top: 50,
-            left: 50,
-            child: Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  const Text('Opponent'),
-                  Image.asset(opponentCards[0], width: 50), // Example opponent card
-                  Image.asset(opponentCards[1], width: 50), // Example opponent card
-                  const SizedBox(height: 8),
-                  Text('Stack Size: $opponentStackSize'),
-                ],
-              ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            const Text(
+              'Player Cards:',
+              style: TextStyle(fontSize: 18),
             ),
-          ),
-          // Player's cards
-          Positioned(
-            bottom: 50,
-            left: MediaQuery.of(context).size.width / 2 - 50,
-            child: Row(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: playerCards.map((card) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Image.asset(
+                    card,
+                    width: 60,
+                    height: 90,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Opponent Cards:',
+              style: TextStyle(fontSize: 18),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: opponentCards.map((card) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Image.asset(
+                    card,
+                    width: 60,
+                    height: 90,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Generated Cards:',
+              style: TextStyle(fontSize: 18),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: generatedCards.map((card) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Image.asset(
+                    card,
+                    width: 60,
+                    height: 90,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Player Actions:',
+              style: TextStyle(fontSize: 18),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset(playerCards[0], width: 50), // Player card
-                Image.asset(playerCards[1], width: 50), // Player card
+                ElevatedButton(
+                  onPressed: userCalled || gameEnded ? null : _userCall,
+                  child: const Text('Call'),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: userRaised || gameEnded
+                      ? null
+                      : () async {
+                          int raiseAmount = int.parse(raiseController.text);
+                          if (raiseAmount >= 0 &&
+                              raiseAmount <= userStackSize &&
+                              raiseAmount <= opponentStackSize) {
+                            _userRaise(raiseAmount);
+                          }
+                        },
+                  child: const Text('Raise'),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  width: 50,
+                  child: TextField(
+                    controller: raiseController,
+                    keyboardType: TextInputType.number,
+                    decoration: const InputDecoration(hintText: 'Amt'),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: gameEnded ? null : _userFold,
+                  child: const Text('Fold'),
+                ),
               ],
             ),
-          ),
-          // Generated cards
-          Positioned(
-            top: MediaQuery.of(context).size.height / 2 - 25,
-            left: MediaQuery.of(context).size.width / 2 - 75,
-            child: Row(
-              children: generatedCards.map((card) => Image.asset(card, width: 50)).toList(),
-            ),
-          ),
-          // Call, Fold, and Raise buttons
-          if (!gameEnded)
-            Positioned(
-              top: MediaQuery.of(context).size.height - 100,
-              left: MediaQuery.of(context).size.width / 2 - 50,
-              child: Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: generatedCards.length <= 5 && !userCalled && !opponentCalled ? _userCall : null,
-                    child: const Text('Call'),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: generatedCards.length == 5 && userCalled && opponentCalled ? null : _userFold,
-                    child: const Text('Fold'),
-                  ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: generatedCards.length == 5 && userCalled && opponentCalled ? null : () => _userRaise(50),
-                    child: const Text('Raise 50'),
-                  ),
-                ],
-              ),
-            ),
-          // User stack size
-          Positioned(
-            bottom: 10,
-            right: 10,
-            child: Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(8.0),
-              child: Text('Stack Size: $userStackSize'),
-            ),
-          ),
-        ],
+            const SizedBox(height: 20),
+            Text('Current Bet: $currentBet'),
+            const SizedBox(height: 20),
+            Text('Player Stack: $userStackSize'),
+            const SizedBox(height: 20),
+            Text('Opponent Stack: $opponentStackSize'),
+          ],
+        ),
       ),
     );
   }

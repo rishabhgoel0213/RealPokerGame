@@ -45,12 +45,13 @@ def get_hand_type(hand_strength):
 
 def evaluate_hands(match_data, match_id):
     try:
-        player1_cards = match_data['player1']['cards']
-        player2_cards = match_data['player2']['cards']
+        player1_cards = [Card.new(Card.int_to_str(card)) for card in match_data['player1']['cards']]
+        player2_cards = [Card.new(Card.int_to_str(card)) for card in match_data['player2']['cards']]
         round_names = ['flop', 'turn', 'river']
         board = []
         for i in range(match_data['round']):
             board += match_data[round_names[i]]
+        board = [Card.new(Card.int_to_str(card)) for card in board]
     except KeyError as e:
         logger.error(f"KeyError during card conversion: {e}")
         raise
@@ -104,11 +105,11 @@ def proceed_to_next_round():
                     logger.info(f"Game has ended! Winner is {match_data['winner']}")
 
                 # Evaluate hands
-                player1_hand_type, player2_hand_type, player1_strength, player2_strength = evaluate_hands(match_data,
+                if match_data['round'] != 0:
+                    player1_hand_type, player2_hand_type, player1_strength, player2_strength = evaluate_hands(match_data,
                                                                                                           match.id)
-
-                update_data['player1.hand_type'] = player1_hand_type
-                update_data['player2.hand_type'] = player2_hand_type
+                    update_data['player1.hand_type'] = player1_hand_type
+                    update_data['player2.hand_type'] = player2_hand_type
 
                 # Determine who initially had the action and give it back to them
                 if match_data['player1']['fold'] or match_data['player2']['fold']:

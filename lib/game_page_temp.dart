@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; 
 
 class Tuple<X, Y> {
   final X item1;
@@ -9,13 +11,17 @@ class Tuple<X, Y> {
 }
 
 class GamePageTemp extends StatefulWidget {
-  const GamePageTemp({Key? key}) : super(key: key);
+  const GamePageTemp({Key? key, required this.userId ,required this.matchId}) : super(key: key);
+
+  final String userId;
+  final String matchId;
 
   @override
-  _GamePageState createState() => _GamePageState();
+  _GamePageState createState() => _GamePageState(userId: userId, matchId: matchId);
 }
 
 class _GamePageState extends State<GamePageTemp> {
+  _GamePageState({required this.userId, required this.matchId});
   final List<String> cardAssets = [
     'assets/cards/club_ace.png',
     'assets/cards/club_two.png',
@@ -71,6 +77,63 @@ class _GamePageState extends State<GamePageTemp> {
     'assets/cards/spade_king.png'
   ];
 
+  final Map<int, String> cardMapping = {
+    16787479: "assets/cards/spade_ten.png",
+    73730: "assets/cards/heart_two.png",
+    2102541: "assets/cards/spade_seven.png",
+    8423187: "assets/cards/club_nine.png",
+    134253349: "assets/cards/club_king.png",
+    533255: "assets/cards/heart_five.png",
+    8394515: "assets/cards/heart_nine.png",
+    268442665: "assets/cards/spade_ace.png",
+    139523: "assets/cards/heart_three.png",
+    268454953: "assets/cards/diamond_ace.png",
+    134236965: "assets/cards/diamong_king.png",
+    134224677: "assets/cards/spade_king.png",
+    4199953: "assets/cards/spade_eight.png",
+    279045: "assets/cards/diamond_four.png",
+    4212241: "assets/cards/diamond_eight.png",
+    16783383: "assets/cards/spade_ten.png",
+    4204049: "assets/cards/heart_eight.png",
+    8398611: "assets/cards/heart_nine.png",
+    2106637: "assets/cards/heart_seven.png",
+    33573149: "assets/cards/diamond_jack.png",
+    1053707: "assets/cards/spade_six.png",
+    81922: "assets/cards/diamond_two.png",
+    8406803: "assets/cards/diamond_nine.png",
+    69634: "assets/cards/spade_two.png",
+    147715: "assets/cards/diamond_three.png",
+    33560861: "assets/cards/spade_jack.png",
+    541447: "assets/cards/diamond_five.png",
+    67119647: "assets/cards/heart_queen.png",
+    1057803: "assets/cards/heart_six.png",
+    33564957: "assets/cards/heart_jack.png",
+    529159: "assets/cards/spade_five.png",
+    557831: "assets/cards/club_five.png",
+    67115551: "assets/cards/spade_queen.png",
+    16812055: "assets/cards/club_ten.png",
+    16795671: "assets/cards/diamond_ten.png",
+    2131213: "assets/cards/club_seven.png",
+    1082379: "assets/cards/club_six.png",
+    33589533: "assets/cards/club_jack.png",
+    98306: "assets/cards/club_two.png",
+    135427: "assets/cards/spade_three.png",
+    2114829: "assets/cards/diamond_seven.png",
+    134228773: "assets/cards/heart_king.png",
+    67127839: "assets/cards/diamond_queen.png",
+    67144223: "assets/cards/club_queen.png",
+    268471337: "assets/cards/club_ace.png",
+    164099: "assets/cards/club_three.png",
+    295429: "assets/cards/club_four.png",
+    266757: "assets/cards/spade_four.png",
+    268446761: "assets/cards/heart_ace.png",
+    270853: "assets/cards/heart_four.png",
+    4228626: "assets/cards/club_eight.png",
+    1065995: "assets/cards/diamond_six.png"
+};
+
+  final String userId;
+  final String matchId;
   late List<String> commonBank;
   late List<String> playerCards;
   late List<String> opponentCards;
@@ -89,6 +152,8 @@ class _GamePageState extends State<GamePageTemp> {
   int round = 0;
   int buyIn = 500;
   final TextEditingController raiseController = TextEditingController();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance; 
+
 
   @override
   void initState() {
@@ -209,6 +274,24 @@ class _GamePageState extends State<GamePageTemp> {
     _showGameEndDialog();
   }
 
+  void _redirectToGamePage(BuildContext context) async {
+    await _firestore.collection('users').doc(userId).update({
+      'searchingForMatch': true,
+    });
+
+    Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
+      DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();
+
+      if (snapshot.exists && !(snapshot.data()!['searchingForMatch'] ?? true)) {
+        timer.cancel();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => GamePageTemp(userId: userId, matchId: snapshot.data()!['matchId'],)),
+        );
+      }
+    });
+  }
+
   void _showGameEndDialog() {
     showDialog(
       context: context,
@@ -219,13 +302,7 @@ class _GamePageState extends State<GamePageTemp> {
           content: const Text('Would you like to play again or quit?'),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const GamePageTemp()),
-                );
-              },
+              onPressed: () => _redirectToGamePage(context),
               child: const Text('Play Again'),
             ),
             TextButton(

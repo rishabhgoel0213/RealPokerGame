@@ -55,17 +55,28 @@ class _MyHomePageState extends State<MyHomePage> {
         timer.cancel();
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => GamePage(matchId: snapshot.data()!['matchId'],)),
+          MaterialPageRoute(builder: (context) => GamePage(userId: userId, matchId: snapshot.data()!['match_id'],)),
         );
       }
     });
   }
 
-  void _redirectToTempGamePage(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const GamePageTemp()),
-    );
+  void _redirectToTempGamePage(BuildContext context) async {
+    await _firestore.collection('users').doc(userId).update({
+      'searchingForMatch': true,
+    });
+
+    Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
+      DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();
+
+      if (snapshot.exists && !(snapshot.data()!['searchingForMatch'] ?? true)) {
+        timer.cancel();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => GamePageTemp(userId: userId, matchId: snapshot.data()!['match_id'],)),
+        );
+      }
+    });
   }
 
   void _redirectToFriendsPage(BuildContext context) {

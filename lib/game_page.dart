@@ -1,91 +1,94 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
+import 'dart:async';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class Tuple<X, Y> {
+  final X item1;
+  final Y item2;
+  Tuple(this.item1, this.item2);
+}
 
 class GamePage extends StatefulWidget {
-  const GamePage({Key? key, required this.matchId}) : super(key: key);
+  const GamePage({Key? key, required this.userId, required this.matchId}) : super(key: key);
 
+  final String userId;
   final String matchId;
 
   @override
-  _GamePageState createState() => _GamePageState(matchId: matchId);
+  _GamePageState createState() => _GamePageState(userId: userId, matchId: matchId);
 }
 
 class _GamePageState extends State<GamePage> {
-
-  _GamePageState({required this.matchId});
-
-  final List<String> cardAssets = [
-    'assets/cards/club_ace.png',
-    'assets/cards/club_two.png',
-    'assets/cards/club_three.png',
-    'assets/cards/club_four.png',
-    'assets/cards/club_five.png',
-    'assets/cards/club_six.png',
-    'assets/cards/club_seven.png',
-    'assets/cards/club_eight.png',
-    'assets/cards/club_nine.png',
-    'assets/cards/club_ten.png',
-    'assets/cards/club_jack.png',
-    'assets/cards/club_queen.png',
-    'assets/cards/club_king.png',
-    'assets/cards/diamond_ace.png',
-    'assets/cards/diamond_two.png',
-    'assets/cards/diamond_three.png',
-    'assets/cards/diamond_four.png',
-    'assets/cards/diamond_five.png',
-    'assets/cards/diamond_six.png',
-    'assets/cards/diamond_seven.png',
-    'assets/cards/diamond_eight.png',
-    'assets/cards/diamond_nine.png',
-    'assets/cards/diamond_ten.png',
-    'assets/cards/diamond_jack.png',
-    'assets/cards/diamond_queen.png',
-    'assets/cards/diamond_king.png',
-    'assets/cards/heart_ace.png',
-    'assets/cards/heart_two.png',
-    'assets/cards/heart_three.png',
-    'assets/cards/heart_four.png',
-    'assets/cards/heart_five.png',
-    'assets/cards/heart_six.png',
-    'assets/cards/heart_seven.png',
-    'assets/cards/heart_eight.png',
-    'assets/cards/heart_nine.png',
-    'assets/cards/heart_ten.png',
-    'assets/cards/heart_jack.png',
-    'assets/cards/heart_queen.png',
-    'assets/cards/heart_king.png',
-    'assets/cards/spade_ace.png',
-    'assets/cards/spade_two.png',
-    'assets/cards/spade_three.png',
-    'assets/cards/spade_four.png',
-    'assets/cards/spade_five.png',
-    'assets/cards/spade_six.png',
-    'assets/cards/spade_seven.png',
-    'assets/cards/spade_eight.png',
-    'assets/cards/spade_nine.png',
-    'assets/cards/spade_ten.png',
-    'assets/cards/spade_jack.png',
-    'assets/cards/spade_queen.png',
-    'assets/cards/spade_king.png'
-  ];
-
+  _GamePageState({required this.userId, required this.matchId});
+  final String userId;
   final String matchId;
-  late List<String> commonBank;
-  late List<String> playerCards;
-  late List<String> opponentCards;
-  late List<String> generatedCards;
-  bool userCalled = false;
-  bool opponentCalled = false;
-  bool userRaised = false;
-  bool opponentRaised = false;
-  int userStackSize = 500;
-  int opponentStackSize = 500;
-  bool gameEnded = false;
-  String winner = '';
-  int currentBet = 0;
-  int userBet = 0;
-  int opponentBet = 0;
-  int round = 0;
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  late DocumentSnapshot<Map<String, dynamic>> matchSnapshot;
+  late Map<String, dynamic> playerData;
+  late Map<String, dynamic> opponentData;
+  late List<String> playerCards = [];
+  late List<String> generatedCards = [];
+  late int round;
+
+  final Map<int, String> cardMapping = {
+    16787479: "assets/cards/spade_ten.png",
+    73730: "assets/cards/heart_two.png",
+    2102541: "assets/cards/spade_seven.png",
+    8423187: "assets/cards/club_nine.png",
+    134253349: "assets/cards/club_king.png",
+    533255: "assets/cards/heart_five.png",
+    8394515: "assets/cards/heart_nine.png",
+    268442665: "assets/cards/spade_ace.png",
+    139523: "assets/cards/heart_three.png",
+    268454953: "assets/cards/diamond_ace.png",
+    134236965: "assets/cards/diamond_king.png",
+    134224677: "assets/cards/spade_king.png",
+    4199953: "assets/cards/spade_eight.png",
+    279045: "assets/cards/diamond_four.png",
+    4212241: "assets/cards/diamond_eight.png",
+    16783383: "assets/cards/spade_ten.png",
+    4204049: "assets/cards/heart_eight.png",
+    8398611: "assets/cards/heart_nine.png",
+    2106637: "assets/cards/heart_seven.png",
+    33573149: "assets/cards/diamond_jack.png",
+    1053707: "assets/cards/spade_six.png",
+    81922: "assets/cards/diamond_two.png",
+    8406803: "assets/cards/diamond_nine.png",
+    69634: "assets/cards/spade_two.png",
+    147715: "assets/cards/diamond_three.png",
+    33560861: "assets/cards/spade_jack.png",
+    541447: "assets/cards/diamond_five.png",
+    67119647: "assets/cards/heart_queen.png",
+    1057803: "assets/cards/heart_six.png",
+    33564957: "assets/cards/heart_jack.png",
+    529159: "assets/cards/spade_five.png",
+    557831: "assets/cards/club_five.png",
+    67115551: "assets/cards/spade_queen.png",
+    16812055: "assets/cards/club_ten.png",
+    16795671: "assets/cards/diamond_ten.png",
+    2131213: "assets/cards/club_seven.png",
+    1082379: "assets/cards/club_six.png",
+    33589533: "assets/cards/club_jack.png",
+    98306: "assets/cards/club_two.png",
+    135427: "assets/cards/spade_three.png",
+    2114829: "assets/cards/diamond_seven.png",
+    134228773: "assets/cards/heart_king.png",
+    67127839: "assets/cards/diamond_queen.png",
+    67144223: "assets/cards/club_queen.png",
+    268471337: "assets/cards/club_ace.png",
+    164099: "assets/cards/club_three.png",
+    295429: "assets/cards/club_four.png",
+    266757: "assets/cards/spade_four.png",
+    268446761: "assets/cards/heart_ace.png",
+    270853: "assets/cards/heart_four.png",
+    4228626: "assets/cards/club_eight.png",
+    1065995: "assets/cards/diamond_six.png"
+  };
+
+  final TextEditingController raiseController = TextEditingController();
 
   @override
   void initState() {
@@ -93,213 +96,162 @@ class _GamePageState extends State<GamePage> {
     _initGame();
   }
 
-  void _initGame() {
-    commonBank = List.from(cardAssets);
-    generatedCards = [];
-    userCalled = false;
-    opponentCalled = false;
-    userRaised = false;
-    opponentRaised = false;
-    gameEnded = false;
-    winner = '';
-    currentBet = 0;
-    userBet = 0;
-    opponentBet = 0;
-    round = 0;
-    _dealCards();
-  }
-
-  void _dealCards() {
-    final random = Random();
-    playerCards = [];
-    opponentCards = [];
-
-    // Deal two cards to each player
-    for (int i = 0; i < 2; i++) {
-      int playerCardIndex = random.nextInt(commonBank.length);
-      playerCards.add(commonBank.removeAt(playerCardIndex));
-
-      int opponentCardIndex = random.nextInt(commonBank.length);
-      opponentCards.add(commonBank.removeAt(opponentCardIndex));
-    }
-  }
-
-  void _generateCard() {
-    if (generatedCards.length < 5) {
-      final random = Random();
-      int numCards = round == 0 ? 3 : 1;
-
-      for (int i = 0; i < numCards; i++) {
-        if (generatedCards.length >= 5) break;
-        int randomCardIndex = random.nextInt(commonBank.length);
-        generatedCards.add(commonBank.removeAt(randomCardIndex));
+  Future<void> _initGame() async {
+    matchSnapshot = await _firestore.collection('matches').doc(matchId).get();
+    final data = matchSnapshot.data();
+    if (data != null) {
+      final player1 = data['player1'];
+      final player2 = data['player2'];
+      if (player1['id'] == userId) {
+        playerData = player1;
+        opponentData = player2;
+      } else {
+        playerData = player2;
+        opponentData = player1;
       }
 
-      if (round < 3) round++;
+      playerCards = [
+        cardMapping[playerData['cards'][0]]!,
+        cardMapping[playerData['cards'][1]]!
+      ];
+
+      generatedCards = [];
+      round = data['round_number'];
+
+      setState(() {});
     }
   }
 
-  void _userCall() {
-    setState(() {
-      userCalled = true;
-      userStackSize -= (currentBet - userBet);
-      userBet = currentBet;
-    });
+  void _proceedToNextRound() async {
+    matchSnapshot = await _firestore.collection('matches').doc(matchId).get();
+    final data = matchSnapshot.data();
 
-    _opponentCall();
+    if (data != null) {
+      round = data['round_number'];
+      if (round == 1) {
+        generatedCards = (data['flop'] as List).map((card) => cardMapping[card]!).toList();
+      } else if (round == 2) {
+        generatedCards = (data['flop'] as List).map((card) => cardMapping[card]!).toList();
+        generatedCards.add(cardMapping[data['turn']]!);
+      } else if (round == 3) {
+        generatedCards = (data['flop'] as List).map((card) => cardMapping[card]!).toList();
+        generatedCards.add(cardMapping[data['turn']]!);
+        generatedCards.add(cardMapping[data['river']]!);
+      }
 
-    if (opponentCalled) {
-      _proceedToNextRound();
+      setState(() {});
     }
   }
 
-  void _opponentCall() {
-    setState(() {
-      opponentCalled = true;
-      opponentStackSize -= (currentBet - opponentBet);
-      opponentBet = currentBet;
-    });
+  void _userAction(String action, {int? raiseAmount}) async {
+    final batch = _firestore.batch();
 
-    if (userCalled) {
-      _proceedToNextRound();
+    final playerDocRef = _firestore.collection('matches').doc(matchId);
+    final playerField = playerData['id'] == userId ? 'player1' : 'player2';
+    final opponentField = playerData['id'] == userId ? 'player2' : 'player1';
+
+    final playerDataUpdated = playerData;
+    playerDataUpdated['has_action'] = false;
+
+    if (action == 'call') {
+      final opponentRaise = opponentData['raise'];
+      playerDataUpdated['raise'] = opponentRaise;
+      playerDataUpdated['pot'] -= (opponentRaise - playerData['raise']);
+    } else if (action == 'raise' && raiseAmount != null) {
+      playerDataUpdated['raise'] += raiseAmount;
+      playerDataUpdated['pot'] -= raiseAmount;
+      batch.update(playerDocRef, {
+        '$opponentField.has_action': true,
+      });
+    } else if (action == 'fold') {
+      playerDataUpdated['fold'] = true;
     }
-  }
 
-  void _userRaise(int amount) {
-    setState(() {
-      userCalled = true;
-      userRaised = true;
-      currentBet += amount;
-      userStackSize -= (currentBet - userBet);
-      userBet = currentBet;
-      userCalled = true;
-      opponentCalled = false;
+    batch.update(playerDocRef, {
+      '$playerField': playerDataUpdated,
     });
 
-    _opponentCall();
-  }
+    await batch.commit();
 
-  void _proceedToNextRound() {
-    setState(() {
-      userCalled = false;
-      opponentCalled = false;
-      userRaised = false;
-      opponentRaised = false;
-      userBet = 0;
-      opponentBet = 0;
-      currentBet = 0;
-    });
-    _generateCard();
-  }
-
-  void _userFold() {
-    setState(() {
-      gameEnded = true;
-      winner = 'Opponent';
-      opponentStackSize += (userBet + opponentBet);
-    });
-  }
-
-  void _opponentFold() {
-    setState(() {
-      gameEnded = true;
-      winner = 'User';
-      userStackSize += (userBet + opponentBet);
-    });
+    _proceedToNextRound();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Game Page'),
+        title: const Text('Poker Game'),
       ),
-      body: Stack(
-        children: [
-          // Opponent
-          Positioned(
-            top: 50,
-            left: 50,
-            child: Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  const Text('Opponent'),
-                  Image.asset(opponentCards[0], width: 50), // Example opponent card
-                  Image.asset(opponentCards[1], width: 50), // Example opponent card
-                  SizedBox(height: 8),
-                  Text('Stack Size: $opponentStackSize'),
-                ],
-              ),
+      body: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Column(
+          children: [
+            const Text(
+              'Player Cards:',
+              style: TextStyle(fontSize: 18),
             ),
-          ),
-          // Player's cards
-          Positioned(
-            bottom: 50,
-            left: MediaQuery.of(context).size.width / 2 - 50,
-            child: Row(
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: playerCards.map((card) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Image.asset(
+                    card,
+                    width: 60,
+                    height: 90,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Generated Cards:',
+              style: TextStyle(fontSize: 18),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: generatedCards.map((card) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: Image.asset(
+                    card,
+                    width: 60,
+                    height: 90,
+                  ),
+                );
+              }).toList(),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Player Actions:',
+              style: TextStyle(fontSize: 18),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset(playerCards[0], width: 50), // Player card
-                Image.asset(playerCards[1], width: 50), // Player card
+                ElevatedButton(
+                  onPressed: () => _userAction('call'),
+                  child: const Text('Call'),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: () => _userAction('raise', raiseAmount: int.parse(raiseController.text)),
+                  child: const Text('Raise'),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: () => _userAction('fold'),
+                  child: const Text('Fold'),
+                ),
               ],
             ),
-          ),
-          // Generated cards
-          Positioned(
-            top: MediaQuery.of(context).size.height / 2 - 25,
-            left: MediaQuery.of(context).size.width / 2 - 75,
-            child: Row(
-              children: generatedCards.map((card) => Image.asset(card, width: 50)).toList(),
+            TextField(
+              controller: raiseController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Raise Amount'),
             ),
-          ),
-          // Call, Fold, and Raise buttons
-          if (!gameEnded)
-            Positioned(
-              top: MediaQuery.of(context).size.height - 100,
-              left: MediaQuery.of(context).size.width / 2 - 50,
-              child: Row(
-                children: [
-                  ElevatedButton(
-                    onPressed: generatedCards.length < 5 ? _userCall : null,
-                    child: Text('Call'),
-                  ),
-                  SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: _userFold,
-                    child: Text('Fold'),
-                  ),
-                  SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () => _userRaise(50),
-                    child: Text('Raise 50'),
-                  ),
-                ],
-              ),
-            ),
-          // User stack size
-          Positioned(
-            bottom: 10,
-            right: 10,
-            child: Container(
-              color: Colors.white,
-              padding: const EdgeInsets.all(8.0),
-              child: Text('Stack Size: $userStackSize'),
-            ),
-          ),
-          // Display winner if game ended
-          if (gameEnded)
-            Center(
-              child: Container(
-                color: Colors.white,
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  '$winner wins!',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }

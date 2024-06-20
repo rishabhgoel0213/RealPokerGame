@@ -9,6 +9,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'login_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; 
+import 'dart:html';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -44,6 +45,7 @@ class _MyHomePageState extends State<MyHomePage> {
   _MyHomePageState(this.userId);
 
   void _redirectToGamePage(BuildContext context) async {
+    print(userId);
     await _firestore.collection('users').doc(userId).update({
       'searchingForMatch': true,
     });

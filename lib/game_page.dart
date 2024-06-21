@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:html';
 
 class Tuple<X, Y> {
   final X item1;
@@ -32,68 +33,84 @@ class _GamePageState extends State<GamePage> {
   late List<String> playerCards = [];
   late List<String> generatedCards = [];
   late int round;
+  T? cast<T>(x) => x is T ? x : null;
 
-  final Map<int, String> cardMapping = {
-    16787479: "assets/cards/spade_ten.png",
-    73730: "assets/cards/heart_two.png",
-    2102541: "assets/cards/spade_seven.png",
-    8423187: "assets/cards/club_nine.png",
-    134253349: "assets/cards/club_king.png",
-    533255: "assets/cards/heart_five.png",
-    8394515: "assets/cards/heart_nine.png",
-    268442665: "assets/cards/spade_ace.png",
-    139523: "assets/cards/heart_three.png",
-    268454953: "assets/cards/diamond_ace.png",
-    134236965: "assets/cards/diamond_king.png",
-    134224677: "assets/cards/spade_king.png",
-    4199953: "assets/cards/spade_eight.png",
-    279045: "assets/cards/diamond_four.png",
-    4212241: "assets/cards/diamond_eight.png",
-    16783383: "assets/cards/spade_ten.png",
-    4204049: "assets/cards/heart_eight.png",
-    8398611: "assets/cards/heart_nine.png",
-    2106637: "assets/cards/heart_seven.png",
-    33573149: "assets/cards/diamond_jack.png",
-    1053707: "assets/cards/spade_six.png",
-    81922: "assets/cards/diamond_two.png",
-    8406803: "assets/cards/diamond_nine.png",
-    69634: "assets/cards/spade_two.png",
-    147715: "assets/cards/diamond_three.png",
-    33560861: "assets/cards/spade_jack.png",
-    541447: "assets/cards/diamond_five.png",
-    67119647: "assets/cards/heart_queen.png",
-    1057803: "assets/cards/heart_six.png",
-    33564957: "assets/cards/heart_jack.png",
-    529159: "assets/cards/spade_five.png",
-    557831: "assets/cards/club_five.png",
-    67115551: "assets/cards/spade_queen.png",
-    16812055: "assets/cards/club_ten.png",
-    16795671: "assets/cards/diamond_ten.png",
-    2131213: "assets/cards/club_seven.png",
-    1082379: "assets/cards/club_six.png",
-    33589533: "assets/cards/club_jack.png",
-    98306: "assets/cards/club_two.png",
-    135427: "assets/cards/spade_three.png",
-    2114829: "assets/cards/diamond_seven.png",
-    134228773: "assets/cards/heart_king.png",
-    67127839: "assets/cards/diamond_queen.png",
-    67144223: "assets/cards/club_queen.png",
-    268471337: "assets/cards/club_ace.png",
-    164099: "assets/cards/club_three.png",
-    295429: "assets/cards/club_four.png",
-    266757: "assets/cards/spade_four.png",
-    268446761: "assets/cards/heart_ace.png",
-    270853: "assets/cards/heart_four.png",
-    4228626: "assets/cards/club_eight.png",
-    1065995: "assets/cards/diamond_six.png"
+
+  final Map<num, String> cardMapping = {
+    16787479: 'assets/cards/spade_ten.png',
+    73730: 'assets/cards/heart_two.png',
+    2102541: 'assets/cards/spade_seven.png',
+    8423187: 'assets/cards/club_nine.png',
+    134253349: 'assets/cards/club_king.png',
+    533255: 'assets/cards/heart_five.png',
+    8394515: 'assets/cards/heart_nine.png',
+    268442665: 'assets/cards/spade_ace.png',
+    139523: 'assets/cards/heart_three.png',
+    268454953: 'assets/cards/diamond_ace.png',
+    134236965: 'assets/cards/diamond_king.png',
+    134224677: 'assets/cards/spade_king.png',
+    4199953: 'assets/cards/spade_eight.png',
+    279045: 'assets/cards/diamond_four.png',
+    4212241: 'assets/cards/diamond_eight.png',
+    16783383: 'assets/cards/spade_ten.png',
+    4204049: 'assets/cards/heart_eight.png',
+    8398611: 'assets/cards/heart_nine.png',
+    2106637: 'assets/cards/heart_seven.png',
+    33573149: 'assets/cards/diamond_jack.png',
+    1053707: 'assets/cards/spade_six.png',
+    81922: 'assets/cards/diamond_two.png',
+    8406803: 'assets/cards/diamond_nine.png',
+    69634: 'assets/cards/spade_two.png',
+    147715: 'assets/cards/diamond_three.png',
+    33560861: 'assets/cards/spade_jack.png',
+    541447: 'assets/cards/diamond_five.png',
+    67119647: 'assets/cards/heart_queen.png',
+    1057803: 'assets/cards/heart_six.png',
+    33564957: 'assets/cards/heart_jack.png',
+    529159: 'assets/cards/spade_five.png',
+    557831: 'assets/cards/club_five.png',
+    67115551: 'assets/cards/spade_queen.png',
+    16812055: 'assets/cards/club_ten.png',
+    16795671: 'assets/cards/diamond_ten.png',
+    2131213: 'assets/cards/club_seven.png',
+    1082379: 'assets/cards/club_six.png',
+    33589533: 'assets/cards/club_jack.png',
+    98306: 'assets/cards/club_two.png',
+    135427: 'assets/cards/spade_three.png',
+    2114829: 'assets/cards/diamond_seven.png',
+    134228773: 'assets/cards/heart_king.png',
+    67127839: 'assets/cards/diamond_queen.png',
+    67144223: 'assets/cards/club_queen.png',
+    268471337: 'assets/cards/club_ace.png',
+    164099: 'assets/cards/club_three.png',
+    295429: 'assets/cards/club_four.png',
+    266757: 'assets/cards/spade_four.png',
+    268446761: 'assets/cards/heart_ace.png',
+    270853: 'assets/cards/heart_four.png',
+    4228626: 'assets/cards/club_eight.png',
+    1065995: 'assets/cards/diamond_six.png'
   };
 
   final TextEditingController raiseController = TextEditingController();
+  late Stream<DocumentSnapshot> _stream;
 
   @override
   void initState() {
     super.initState();
     _initGame();
+    _stream = FirebaseFirestore.instance
+        .collection('matches')
+        .doc(matchId)
+        .snapshots();
+
+    _stream.listen((DocumentSnapshot snapshot) {
+      if (snapshot.exists) {
+        var data = snapshot.data() as Map<String, dynamic>;
+        setState(() {
+          _proceedToNextRound();
+        });
+      }
+    });
   }
 
   Future<void> _initGame() async {
@@ -109,14 +126,18 @@ class _GamePageState extends State<GamePage> {
         playerData = player2;
         opponentData = player1;
       }
+      
+      List<dynamic> playerCardNums = playerData['cards'];
+      print(playerCardNums);
 
       playerCards = [
-        cardMapping[playerData['cards'][0]]!,
-        cardMapping[playerData['cards'][1]]!
+        cardMapping[playerCardNums[0]]!,
+        cardMapping[playerCardNums[1]]!
       ];
+      print(playerCards);
 
       generatedCards = [];
-      round = data['round_number'];
+      round = data['round'];
 
       setState(() {});
     }
@@ -127,7 +148,7 @@ class _GamePageState extends State<GamePage> {
     final data = matchSnapshot.data();
 
     if (data != null) {
-      round = data['round_number'];
+      round = data['round'];
       if (round == 1) {
         generatedCards = (data['flop'] as List).map((card) => cardMapping[card]!).toList();
       } else if (round == 2) {
@@ -135,8 +156,8 @@ class _GamePageState extends State<GamePage> {
         generatedCards.add(cardMapping[data['turn']]!);
       } else if (round == 3) {
         generatedCards = (data['flop'] as List).map((card) => cardMapping[card]!).toList();
-        generatedCards.add(cardMapping[data['turn']]!);
-        generatedCards.add(cardMapping[data['river']]!);
+        generatedCards.add(cardMapping[data['turn'][0]]!);
+        generatedCards.add(cardMapping[data['river'][0]]!);
       }
 
       setState(() {});
@@ -147,8 +168,9 @@ class _GamePageState extends State<GamePage> {
     final batch = _firestore.batch();
 
     final playerDocRef = _firestore.collection('matches').doc(matchId);
-    final playerField = playerData['id'] == userId ? 'player1' : 'player2';
-    final opponentField = playerData['id'] == userId ? 'player2' : 'player1';
+    final data = matchSnapshot.data();
+    final playerField = data!['player1']['id'] == userId ? 'player1' : 'player2';
+    final opponentField = playerField == 'player1' ? 'player2' : 'player1';
 
     final playerDataUpdated = playerData;
     playerDataUpdated['has_action'] = false;
@@ -172,8 +194,6 @@ class _GamePageState extends State<GamePage> {
     });
 
     await batch.commit();
-
-    _proceedToNextRound();
   }
 
   @override

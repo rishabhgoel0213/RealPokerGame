@@ -2,13 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'dart:html';
-
-class Tuple<X, Y> {
-  final X item1;
-  final Y item2;
-  Tuple(this.item1, this.item2);
-}
 
 class GamePage extends StatefulWidget {
   const GamePage({Key? key, required this.userId, required this.matchId}) : super(key: key);
@@ -33,8 +26,8 @@ class _GamePageState extends State<GamePage> {
   late List<String> playerCards = [];
   late List<String> generatedCards = [];
   late int round;
+  late bool hasAction = false;
   T? cast<T>(x) => x is T ? x : null;
-
 
   final Map<num, String> cardMapping = {
     16787479: 'assets/cards/spade_ten.png',
@@ -105,16 +98,17 @@ class _GamePageState extends State<GamePage> {
 
     _stream.listen((DocumentSnapshot snapshot) {
       if (snapshot.exists) {
+        matchSnapshot = snapshot as DocumentSnapshot<Map<String, dynamic>>;
         var data = snapshot.data() as Map<String, dynamic>;
         setState(() {
-          _proceedToNextRound();
+          _updateGameState(data);
         });
       }
     });
   }
 
   Future<void> _initGame() async {
-    matchSnapshot = await _firestore.collection('matches').doc(matchId).get();
+    matchSnapshot = await _firestore.collection('matches').doc(matchId).get() as DocumentSnapshot<Map<String, dynamic>>;
     final data = matchSnapshot.data();
     if (data != null) {
       final player1 = data['player1'];
@@ -126,45 +120,52 @@ class _GamePageState extends State<GamePage> {
         playerData = player2;
         opponentData = player1;
       }
-      
-      List<dynamic> playerCardNums = playerData['cards'];
-      print(playerCardNums);
 
+      List<dynamic> playerCardNums = playerData['cards'];
       playerCards = [
         cardMapping[playerCardNums[0]]!,
         cardMapping[playerCardNums[1]]!
       ];
-      print(playerCards);
 
       generatedCards = [];
       round = data['round'];
+      hasAction = playerData['has_action'];
 
       setState(() {});
     }
   }
 
-  void _proceedToNextRound() async {
-    matchSnapshot = await _firestore.collection('matches').doc(matchId).get();
-    final data = matchSnapshot.data();
-
-    if (data != null) {
-      round = data['round'];
-      if (round == 1) {
-        generatedCards = (data['flop'] as List).map((card) => cardMapping[card]!).toList();
-      } else if (round == 2) {
-        generatedCards = (data['flop'] as List).map((card) => cardMapping[card]!).toList();
-        generatedCards.add(cardMapping[data['turn']]!);
-      } else if (round == 3) {
-        generatedCards = (data['flop'] as List).map((card) => cardMapping[card]!).toList();
-        generatedCards.add(cardMapping[data['turn'][0]]!);
-        generatedCards.add(cardMapping[data['river'][0]]!);
-      }
-
-      setState(() {});
+  void _updateGameState(Map<String, dynamic> data) {
+    final player1 = data['player1'];
+    final player2 = data['player2'];
+    if (player1['id'] == userId) {
+      playerData = player1;
+      opponentData = player2;
+    } else {
+      playerData = player2;
+      opponentData = player1;
     }
+
+    round = data['round'];
+    hasAction = playerData['has_action'];
+
+    if (round == 1) {
+      generatedCards = (data['flop'] as List).map((card) => cardMapping[card]!).toList();
+    } else if (round == 2) {
+      generatedCards = (data['flop'] as List).map((card) => cardMapping[card]!).toList();
+      generatedCards.add(cardMapping[data['turn'][0]]!);
+    } else if (round == 3) {
+      generatedCards = (data['flop'] as List).map((card) => cardMapping[card]!).toList();
+      generatedCards.add(cardMapping[data['turn'][0]]!);
+      generatedCards.add(cardMapping[data['river'][0]]!);
+    }
+
+    setState(() {});
   }
 
   void _userAction(String action, {int? raiseAmount}) async {
+    if (!hasAction) return;
+
     final batch = _firestore.batch();
 
     final playerDocRef = _firestore.collection('matches').doc(matchId);
@@ -172,7 +173,7 @@ class _GamePageState extends State<GamePage> {
     final playerField = data!['player1']['id'] == userId ? 'player1' : 'player2';
     final opponentField = playerField == 'player1' ? 'player2' : 'player1';
 
-    final playerDataUpdated = playerData;
+    final playerDataUpdated = Map<String, dynamic>.from(playerData);
     playerDataUpdated['has_action'] = false;
 
     if (action == 'call') {
@@ -180,6 +181,10 @@ class _GamePageState extends State<GamePage> {
       playerDataUpdated['raise'] = opponentRaise;
       playerDataUpdated['pot'] -= (opponentRaise - playerData['raise']);
     } else if (action == 'raise' && raiseAmount != null) {
+      if ((raiseAmount + playerData['raise']) <= opponentData['raise']) {
+        print("Raise amount is less than opponent's raise.");
+        return;
+      }
       playerDataUpdated['raise'] += raiseAmount;
       playerDataUpdated['pot'] -= raiseAmount;
       batch.update(playerDocRef, {
@@ -250,17 +255,17 @@ class _GamePageState extends State<GamePage> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
-                  onPressed: () => _userAction('call'),
+                  onPressed: hasAction ? () => _userAction('call') : null,
                   child: const Text('Call'),
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
-                  onPressed: () => _userAction('raise', raiseAmount: int.parse(raiseController.text)),
+                  onPressed: hasAction ? () => _userAction('raise', raiseAmount: int.parse(raiseController.text)) : null,
                   child: const Text('Raise'),
                 ),
                 const SizedBox(width: 10),
                 ElevatedButton(
-                  onPressed: () => _userAction('fold'),
+                  onPressed: hasAction ? () => _userAction('fold') : null,
                   child: const Text('Fold'),
                 ),
               ],

@@ -32,7 +32,7 @@ class _LoginPageState extends State<LoginPage> {
         // Navigate to home page with the user ID
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => MyHomePage(title: "This Is Poker", userId: userId)),
+          MaterialPageRoute(builder: (context) => MyHomePage(title: "This Is Poker", userId: userId,)),
         );
       }
 

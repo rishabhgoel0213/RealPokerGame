@@ -9,6 +9,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'login_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart'; 
+import 'package:firebase_auth/firebase_auth.dart';
 import 'dart:html';
 
 void main() async {
@@ -31,8 +32,8 @@ class MyApp extends StatelessWidget {
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key, required this.title, required this.userId}) : super(key: key);
 
-  final String title;
   final String userId;
+  final String title;
 
   @override
   State<MyHomePage> createState() => _MyHomePageState(userId);
@@ -45,10 +46,9 @@ class _MyHomePageState extends State<MyHomePage> {
   _MyHomePageState(this.userId);
 
   void _redirectToGamePage(BuildContext context) async {
-    print(userId);
-    await _firestore.collection('users').doc(userId).update({
+    await _firestore.collection('users').doc(userId).set({
       'searchingForMatch': true,
-    });
+    }, SetOptions(merge: true));
 
     Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
       DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();

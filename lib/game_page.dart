@@ -80,7 +80,7 @@ class _GamePageState extends State<GamePage> {
     266757: 'assets/cards/spade_four.png',
     268446761: 'assets/cards/heart_ace.png',
     270853: 'assets/cards/heart_four.png',
-    4228626: 'assets/cards/club_eight.png',
+    4228625: 'assets/cards/club_eight.png',
     1065995: 'assets/cards/diamond_six.png'
   };
 

@@ -132,6 +132,7 @@ class _GamePageState extends State<GamePage> {
   void _redirectToGamePage(BuildContext context) async {
     await _firestore.collection('users').doc(userId).set({
       'newMatch': true,
+      'inMatch': false,
     }, SetOptions(merge: true));
 
     Timer.periodic(const Duration(seconds: 1), (Timer timer) async {

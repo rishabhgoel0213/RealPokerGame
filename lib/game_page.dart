@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'loading_page.dart';
+import 'main.dart';
 
 class GamePage extends StatefulWidget {
   const GamePage({Key? key, required this.userId, required this.matchId}) : super(key: key);
@@ -109,44 +111,61 @@ class _GamePageState extends State<GamePage> {
 
 
   void _showGameOverDialog(String winner) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: Text('Game Over'),
-        content: Text('$winner won the game!'),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              _redirectToGamePage(context); // Navigate to a new game
-            },
-            child: Text('New Game'),
-          ),
-        ],
-      );
-    },
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Game Over'),
+          content: Text('$winner won the game!'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _redirectToGamePage(context); // Navigate to a new game
+              },
+              child: Text('New Game'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _redirectToMainPage(context); // Navigate to main page
+              },
+              child: Text('Quit'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+void _redirectToGamePage(BuildContext context) async {
+  await _firestore.collection('users').doc(userId).set({
+    'inMatch': false,
+    'newMatch': true,
+  }, SetOptions(merge: true));
+
+  Navigator.pushReplacement(
+    context,
+    MaterialPageRoute(
+      builder: (context) => LoadingPage(userId: userId),
+    ),
   );
 }
 
-  void _redirectToGamePage(BuildContext context) async {
+  void _redirectToMainPage(BuildContext context) async {
     await _firestore.collection('users').doc(userId).set({
-      'newMatch': true,
       'inMatch': false,
+      'newMatch': false,
     }, SetOptions(merge: true));
 
-    Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
-      DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();
-
-      if (snapshot.exists && !(snapshot.data()!['newMatch'] ?? true)) {
-        timer.cancel();
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => GamePage(userId: userId, matchId: snapshot.data()!['match_id'],)),
-        );
-      }
-    });
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MyHomePage(title: "This Is Poker", userId: userId),
+      ),
+    );
   }
+
 
   Future<void> _initGame() async {
     matchSnapshot = await _firestore.collection('matches').doc(matchId).get() as DocumentSnapshot<Map<String, dynamic>>;

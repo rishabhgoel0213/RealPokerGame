@@ -79,6 +79,14 @@ def proceed_to_next_round():
             if not player1_action and not player2_action:
                 update_data = {}
 
+                # Evaluate hands
+                if match_data['round'] != 0 and match_data['round'] != 4:
+                    player1_hand_type, player2_hand_type, player1_strength, player2_strength = evaluate_hands(
+                        match_data,
+                        match.id)
+                    update_data['player1.hand_type'] = player1_hand_type
+                    update_data['player2.hand_type'] = player2_hand_type
+
                 if match_data['round'] == 3:
                     if match_data['player1']['fold']:
                         update_data['winner'] = 'player2'
@@ -102,14 +110,15 @@ def proceed_to_next_round():
                     update_data['round'] = 3
                     logger.info(f"Now in River {match.id}: River is {Card.int_to_pretty_str(match_data['river'][0])}")
                 elif match_data['round'] == 3:
-                    logger.info(f"Game has ended! Winner is {match_data['winner']}")
-
-                # Evaluate hands
-                if match_data['round'] != 0:
-                    player1_hand_type, player2_hand_type, player1_strength, player2_strength = evaluate_hands(match_data,
-                                                                                                          match.id)
-                    update_data['player1.hand_type'] = player1_hand_type
-                    update_data['player2.hand_type'] = player2_hand_type
+                    update_data['round'] = 4
+                    logger.info(f"Game has ended! Winner is {update_data['winner']}")
+                elif match_data['round'] == 4:
+                    winner = match_data['winner']
+                    loser = 'player1' if winner == 'player2' else 'player2'
+                    update_data[winner]['pot'] += update_data[winner]['raise'] + update_data[loser]['raise']
+                    update_data[winner]['raise'] = 0
+                    update_data[loser]['raise'] = 0
+                    logger.info(f"Player 1 new pot size is {match_data[winner]['pot']}. Player 2 new pot size is {match_data[loser]['pot']}")
 
                 # Determine who initially had the action and give it back to them
                 if match_data['player1']['fold'] or match_data['player2']['fold']:

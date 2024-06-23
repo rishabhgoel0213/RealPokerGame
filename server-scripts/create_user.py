@@ -22,7 +22,10 @@ def create_user_document(email):
         'email': email,
         'match_id': None,
         'rating': 1000,
-        'searchingForMatch': False
+        'searchingForMatch': False,
+        'inMatch': False,
+        'newMatch': False,
+        'pot': 0
     })
 
 # Function to handle new user creation

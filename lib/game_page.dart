@@ -107,6 +107,46 @@ class _GamePageState extends State<GamePage> {
     });
   }
 
+
+  void _showGameOverDialog(String winner) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Game Over'),
+        content: Text('$winner won the game!'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _redirectToGamePage(context); // Navigate to a new game
+            },
+            child: Text('New Game'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+  void _redirectToGamePage(BuildContext context) async {
+    await _firestore.collection('users').doc(userId).set({
+      'newMatch': true,
+    }, SetOptions(merge: true));
+
+    Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
+      DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();
+
+      if (snapshot.exists && !(snapshot.data()!['newMatch'] ?? true)) {
+        timer.cancel();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => GamePage(userId: userId, matchId: snapshot.data()!['match_id'],)),
+        );
+      }
+    });
+  }
+
   Future<void> _initGame() async {
     matchSnapshot = await _firestore.collection('matches').doc(matchId).get() as DocumentSnapshot<Map<String, dynamic>>;
     final data = matchSnapshot.data();
@@ -158,6 +198,8 @@ class _GamePageState extends State<GamePage> {
       generatedCards = (data['flop'] as List).map((card) => cardMapping[card]!).toList();
       generatedCards.add(cardMapping[data['turn'][0]]!);
       generatedCards.add(cardMapping[data['river'][0]]!);
+    } if (round == 4) {
+      _showGameOverDialog(data['winner']);
     }
 
     setState(() {});
@@ -192,6 +234,7 @@ class _GamePageState extends State<GamePage> {
       });
     } else if (action == 'fold') {
       playerDataUpdated['fold'] = true;
+      round = 4;
     }
 
     batch.update(playerDocRef, {

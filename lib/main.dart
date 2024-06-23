@@ -47,13 +47,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _redirectToGamePage(BuildContext context) async {
     await _firestore.collection('users').doc(userId).set({
-      'searchingForMatch': true,
+      'newMatch': true,
     }, SetOptions(merge: true));
 
     Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
       DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();
 
-      if (snapshot.exists && !(snapshot.data()!['searchingForMatch'] ?? true)) {
+      if (snapshot.exists && !(snapshot.data()!['newMatch'] ?? true)) {
         timer.cancel();
         Navigator.push(
           context,
@@ -65,13 +65,13 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _redirectToTempGamePage(BuildContext context) async {
     await _firestore.collection('users').doc(userId).update({
-      'searchingForMatch': true,
+      'newMatch': true,
     });
 
     Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
       DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();
 
-      if (snapshot.exists && !(snapshot.data()!['searchingForMatch'] ?? true)) {
+      if (snapshot.exists && !(snapshot.data()!['newMatch'] ?? true)) {
         timer.cancel();
         Navigator.push(
           context,

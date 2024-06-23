@@ -37,14 +37,14 @@ def end_match():
 
                 if user_data.get('newMatch'):
                     user_ref.update({
-                        'match_id': '',
+                        'match_id': None,
                         'searchingForMatch': True,
                         'pot': user_doc.get('pot')
                     })
                 else:
                     user_ref.update({
                         'rating': user_data['rating'] + user_doc.get('pot'),
-                        'match_id': '',
+                        'match_id': None,
                         'searchingForMatch': False,
                         'pot': 0
                     })

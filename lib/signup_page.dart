@@ -21,14 +21,6 @@ class _SignUpPageState extends State<SignUpPage> {
         password: _passwordController.text,
       );
 
-      // Add user data to Firestore
-      await _firestore.collection('users').doc(userCredential.user?.uid).set({
-        'email': _emailController.text,
-        'searchingForMatch': false,
-        'match_id': null,
-        'rating': 1000
-      });
-
       print("User signed up: ${userCredential.user?.email}");
       setState(() {
         _errorMessage = 'Sign-up successful!';

@@ -29,6 +29,7 @@ class _GamePageState extends State<GamePage> {
   late List<String> generatedCards = [];
   late int round;
   late bool hasAction = false;
+  late bool hadInitalAction = false;
   T? cast<T>(x) => x is T ? x : null;
 
   final Map<num, String> cardMapping = {
@@ -176,9 +177,17 @@ void _redirectToGamePage(BuildContext context) async {
       if (player1['id'] == userId) {
         playerData = player1;
         opponentData = player2;
+        if(data['inital_action'] == 'player1')
+        {
+          hadInitalAction = true;
+        }
       } else {
         playerData = player2;
         opponentData = player1;
+        if(data['inital_action'] == 'player2')
+        {
+          hadInitalAction = true;
+        }
       }
 
       List<dynamic> playerCardNums = playerData['cards'];
@@ -242,6 +251,12 @@ void _redirectToGamePage(BuildContext context) async {
       final opponentRaise = opponentData['raise'];
       playerDataUpdated['raise'] = opponentRaise;
       playerDataUpdated['pot'] -= (opponentRaise - playerData['raise']);
+      if(hadInitalAction)
+      {
+        batch.update(playerDocRef, {
+        '$opponentField.has_action': true,
+        });
+      }
     } else if (action == 'raise' && raiseAmount != null) {
       if ((raiseAmount + playerData['raise']) <= opponentData['raise']) {
         print("Raise amount is less than opponent's raise.");

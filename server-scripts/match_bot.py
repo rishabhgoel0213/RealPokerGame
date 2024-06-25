@@ -115,13 +115,13 @@ def proceed_to_next_round():
                 elif match_data['round'] == 4:
                     winner = match_data['winner']
                     loser = 'player1' if winner == 'player2' else 'player2'
-                    update_data[winner]['pot'] += update_data[winner]['raise'] + update_data[loser]['raise']
-                    update_data[winner]['raise'] = 0
-                    update_data[loser]['raise'] = 0
+                    update_data[winner + '.pot'] = match_data[winner]['pot'] + match_data[winner]['raise'] + match_data[loser]['raise']
+                    update_data[winner + '.raise'] = 0
+                    update_data[loser + '.raise'] = 0
                     logger.info(f"Player 1 new pot size is {match_data[winner]['pot']}. Player 2 new pot size is {match_data[loser]['pot']}")
 
                 # Determine who initially had the action and give it back to them
-                if match_data['player1']['fold'] or match_data['player2']['fold']:
+                if match_data['player1']['fold'] or match_data['player2']['fold'] or match_data['round'] == 3:
                     update_data['player1.has_action'] = False
                     update_data['player2.has_action'] = False
                 else:

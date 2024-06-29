@@ -23,11 +23,15 @@ class _GamePageTempState extends State<GamePageTemp> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   late DocumentSnapshot<Map<String, dynamic>> matchSnapshot;
+  late DocumentSnapshot<Map<String, dynamic>> userSnapshot;
+  late DocumentSnapshot<Map<String, dynamic>> opponentSnapshot;
   late Map<String, dynamic> playerData;
   late Map<String, dynamic> opponentData;
   late List<String> playerCards = [];
   late List<String> generatedCards = [];
   late int round;
+  late Map<String, dynamic> userData;
+  late Map<String, dynamic> oppData;
   late bool hasAction = false;
   late bool hadInitalAction = false;
   T? cast<T>(x) => x is T ? x : null;
@@ -170,7 +174,11 @@ void _redirectToGamePage(BuildContext context) async {
 
   Future<void> _initGame() async {
     matchSnapshot = await _firestore.collection('matches').doc(matchId).get() as DocumentSnapshot<Map<String, dynamic>>;
+    userSnapshot = await _firestore.collection('users').doc(userId).get() as DocumentSnapshot<Map<String, dynamic>>;
     final data = matchSnapshot.data();
+    setState(() {
+      userData = userSnapshot.data()!;
+    });
     if (data != null) {
       final player1 = data['player1'];
       final player2 = data['player2'];
@@ -202,6 +210,10 @@ void _redirectToGamePage(BuildContext context) async {
 
       setState(() {});
     }
+    opponentSnapshot = await _firestore.collection('users').doc(opponentData['id']).get() as DocumentSnapshot<Map<String, dynamic>>;
+    setState(() {
+      oppData = opponentSnapshot.data()!;
+    });
   }
 
   void _updateGameState(Map<String, dynamic> data) {
@@ -279,83 +291,113 @@ void _redirectToGamePage(BuildContext context) async {
     await batch.commit();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Poker Game'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            const Text(
-              'Player Cards:',
+ @override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: AppBar(
+      title: const Text('Poker Game'),
+    ),
+    body: Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Text(
+            'Player Cards:',
+            style: TextStyle(fontSize: 18),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: playerCards.map((card) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: Image.asset(
+                  card,
+                  width: 60,
+                  height: 90,
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'Generated Cards:',
+            style: TextStyle(fontSize: 18),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: generatedCards.map((card) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: Image.asset(
+                  card,
+                  width: 60,
+                  height: 90,
+                ),
+              );
+            }).toList(),
+          ),
+          const SizedBox(height: 20),
+          // Display opponent's rating at the top right
+          Positioned(
+            top: 0,
+            right: 0,
+            child: Text(
+              'Opponent Rating: ${oppData['rating']}',
               style: TextStyle(fontSize: 18),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: playerCards.map((card) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: Image.asset(
-                    card,
-                    width: 60,
-                    height: 90,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Generated Cards:',
-              style: TextStyle(fontSize: 18),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: generatedCards.map((card) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: Image.asset(
-                    card,
-                    width: 60,
-                    height: 90,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Player Actions:',
-              style: TextStyle(fontSize: 18),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+          ),
+          const SizedBox(height: 10),
+          // Display player's rating at the bottom left
+          Positioned(
+            bottom: 0,
+            left: 0,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ElevatedButton(
-                  onPressed: hasAction ? () => _userAction('call') : null,
-                  child: const Text('Call'),
+                const Text(
+                  'Your Rating:',
+                  style: TextStyle(fontSize: 18),
                 ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: hasAction ? () => _userAction('raise', raiseAmount: int.parse(raiseController.text)) : null,
-                  child: const Text('Raise'),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: hasAction ? () => _userAction('fold') : null,
-                  child: const Text('Fold'),
+                Text(
+                  '${userData['rating']}',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
               ],
             ),
-            TextField(
-              controller: raiseController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Raise Amount'),
-            ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Player Actions:',
+            style: TextStyle(fontSize: 18),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: hasAction ? () => _userAction('call') : null,
+                child: const Text('Call'),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: hasAction ? () => _userAction('raise', raiseAmount: int.parse(raiseController.text)) : null,
+                child: const Text('Raise'),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton(
+                onPressed: hasAction ? () => _userAction('fold') : null,
+                child: const Text('Fold'),
+              ),
+            ],
+          ),
+          TextField(
+            controller: raiseController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(labelText: 'Raise Amount'),
+          ),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

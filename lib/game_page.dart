@@ -238,45 +238,12 @@ void _redirectToGamePage(BuildContext context) async {
     if (!hasAction) return;
 
     final batch = _firestore.batch();
-
     final playerDocRef = _firestore.collection('matches').doc(matchId);
     final data = matchSnapshot.data();
     final playerField = data!['player1']['id'] == userId ? 'player1' : 'player2';
-    final opponentField = playerField == 'player1' ? 'player2' : 'player1';
-
     final playerDataUpdated = Map<String, dynamic>.from(playerData);
     playerDataUpdated['action'] = [action, if (raiseAmount != null) raiseAmount];
-    
-    // playerDataUpdated['has_action'] = false;
-
-    // if (action == 'call') {
-    //   final opponentRaise = opponentData['raise'];
-    //   playerDataUpdated['raise'] = opponentRaise;
-    //   playerDataUpdated['pot'] -= (opponentRaise - playerData['raise']);
-    //   if(hadInitalAction)
-    //   {
-    //     batch.update(playerDocRef, {
-    //     '$opponentField.has_action': true,
-    //     });
-    //   }
-    // } else if (action == 'raise' && raiseAmount != null) {
-    //   if ((raiseAmount + playerData['raise']) <= opponentData['raise']) {
-    //     print("Raise amount is less than opponent's raise.");
-    //     return;
-    //   }
-    //   playerDataUpdated['raise'] += raiseAmount;
-    //   playerDataUpdated['pot'] -= raiseAmount;
-    //   batch.update(playerDocRef, {
-    //     '$opponentField.has_action': true,
-    //   });
-    // } else if (action == 'fold') {
-    //   playerDataUpdated['fold'] = true;
-    //   round = 4;
-    // }
-
-    batch.update(playerDocRef, {
-      '$playerField': playerDataUpdated,
-    });
+    batch.update(playerDocRef, {playerField: playerDataUpdated});
 
     await batch.commit();
   }

@@ -90,6 +90,8 @@ def create_match(user_pair):
                 'pot': player1_pot,
                 'fold': False,
                 'has_action': initial_action == 'player1',
+                'action': None,
+                'prev_actions': [],
                 'hand_type': ''
             },
             'player2': {
@@ -99,6 +101,8 @@ def create_match(user_pair):
                 'pot': player2_pot,
                 'fold': False,
                 'has_action': initial_action == 'player2',
+                'action': None,
+                'prev_actions': [],
                 'hand_type': ''
             },
             'flop': deck.draw(3),

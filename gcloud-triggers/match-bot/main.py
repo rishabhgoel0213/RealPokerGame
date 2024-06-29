@@ -107,6 +107,38 @@ def proceed_to_next_round(match_id, match_data):
     except Exception as e:
         logger.error(f"Error in proceed_to_next_round: {e}", exc_info=True)
 
+def process_action(match_id, match_data):
+    try:
+        update_data = {}
+        player = 'player1' if match_data['player1']['has_action'] else 'player2'
+        opponent = 'player1' if player == 'player2' else 'player2'
+        action = match_data[player]['action']
+        opponentRaise = match_data[opponent]['raise']
+        playerRaise = match_data[player]['raise']
+
+
+        update_data[f"{player}.has_action"] = False
+        update_data[f"{player}.action"] = None
+        update_data[f"{player}.prev_actions"] = match_data[player]['prev_actions'] + action
+        if action[0] == "call":
+            update_data[f"{player}.raise"] = opponentRaise
+            update_data[f"{player}.pot"] = match_data[player]['pot'] - (opponentRaise - match_data[player]['raise'])
+            if match_data['initial_action'] == player:
+                update_data[f"{opponent}.has_action"] = True
+        elif action[0] == "raise" and action[1] is not None:
+            if action[1] + playerRaise <= opponentRaise:
+                logger.info("Raise amount is less than opponent's raise.")
+            else:
+                update_data[f"{player}.raise"] = playerRaise + action[1]
+                update_data[f"{player}.pot"] = match_data[player]['pot'] - action[1]
+                update_data[f"{opponent}.has_action"] = True
+        elif action[0] == "fold":
+            update_data[f"{player}.fold"] = True
+        db.collection('matches').document(match_id).update(update_data)
+
+    except Exception as e:
+        logger.error(f"Error in process_action: {e}", exc_info=True)
+
 def firestore_trigger(event, context):
     resource_string = context.resource
     logger.info(f"Function triggered by change to: {resource_string}")
@@ -114,6 +146,9 @@ def firestore_trigger(event, context):
     # Get the updated document
     match_id = context.resource.split('/')[-1]
     match_data = db.collection('matches').document(match_id).get().to_dict()
+
+    if match_data['player1']['action'] is not None or match_data['player2']['action'] is not None:
+        process_action(match_id, match_data)
 
     # Check if neither player has action
     if not match_data['player1']['has_action'] and not match_data['player2']['has_action']:

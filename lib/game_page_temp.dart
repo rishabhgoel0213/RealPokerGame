@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:just_audio/just_audio.dart';
 import 'loading_page.dart';
 import 'main.dart';
 
@@ -21,6 +21,7 @@ class _GamePageTempState extends State<GamePageTemp> {
   final String matchId;
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   late DocumentSnapshot<Map<String, dynamic>> matchSnapshot;
   late DocumentSnapshot<Map<String, dynamic>> userSnapshot;
@@ -114,7 +115,6 @@ class _GamePageTempState extends State<GamePageTemp> {
     });
   }
 
-
   void _showGameOverDialog(String winner) {
     showDialog(
       context: context,
@@ -143,19 +143,19 @@ class _GamePageTempState extends State<GamePageTemp> {
     );
   }
 
-void _redirectToGamePage(BuildContext context) async {
-  await _firestore.collection('users').doc(userId).set({
-    'inMatch': false,
-    'newMatch': true,
-  }, SetOptions(merge: true));
+  void _redirectToGamePage(BuildContext context) async {
+    await _firestore.collection('users').doc(userId).set({
+      'inMatch': false,
+      'newMatch': true,
+    }, SetOptions(merge: true));
 
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (context) => LoadingPage(userId: userId),
-    ),
-  );
-}
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LoadingPage(userId: userId),
+      ),
+    );
+  }
 
   void _redirectToMainPage(BuildContext context) async {
     await _firestore.collection('users').doc(userId).set({
@@ -170,7 +170,6 @@ void _redirectToGamePage(BuildContext context) async {
       ),
     );
   }
-
 
   Future<void> _initGame() async {
     matchSnapshot = await _firestore.collection('matches').doc(matchId).get() as DocumentSnapshot<Map<String, dynamic>>;
@@ -246,112 +245,152 @@ void _redirectToGamePage(BuildContext context) async {
     setState(() {});
   }
 
+  Future<void> _playSound(String fileName) async {
+    try {
+      await _audioPlayer.setAsset('assets/$fileName');
+      _audioPlayer.play();
+    } catch (e) {
+      print("Error playing sound: $e");
+    }
+  }
+
   void _userAction(String action, {int? raiseAmount}) async {
     if (!hasAction) return;
 
     final batch = _firestore.batch();
-
     final playerDocRef = _firestore.collection('matches').doc(matchId);
     final data = matchSnapshot.data();
     final playerField = data!['player1']['id'] == userId ? 'player1' : 'player2';
-    final opponentField = playerField == 'player1' ? 'player2' : 'player1';
-
     final playerDataUpdated = Map<String, dynamic>.from(playerData);
-    playerDataUpdated['has_action'] = false;
+    playerDataUpdated['action'] = [action, if (raiseAmount != null) raiseAmount];
+    batch.update(playerDocRef, {playerField: playerDataUpdated});
 
-    if (action == 'call') {
-      final opponentRaise = opponentData['raise'];
-      playerDataUpdated['raise'] = opponentRaise;
-      playerDataUpdated['pot'] -= (opponentRaise - playerData['raise']);
-      if(hadInitalAction)
-      {
-        batch.update(playerDocRef, {
-        '$opponentField.has_action': true,
-        });
-      }
-    } else if (action == 'raise' && raiseAmount != null) {
-      if ((raiseAmount + playerData['raise']) <= opponentData['raise']) {
-        print("Raise amount is less than opponent's raise.");
-        return;
-      }
-      playerDataUpdated['raise'] += raiseAmount;
-      playerDataUpdated['pot'] -= raiseAmount;
-      batch.update(playerDocRef, {
-        '$opponentField.has_action': true,
-      });
-    } else if (action == 'fold') {
-      playerDataUpdated['fold'] = true;
-      round = 4;
+    // Play sound based on action
+    if (action == 'call' || action == 'raise') {
+      await _playSound('handfull-of-poker-chips-95810.mp3');
+    } else if (action == 'all_in') {
+      await _playSound('allinpushchips-96121.mp3');
     }
-
-    batch.update(playerDocRef, {
-      '$playerField': playerDataUpdated,
-    });
 
     await batch.commit();
   }
 
- @override
-Widget build(BuildContext context) {
-  return Scaffold(
-    appBar: AppBar(
-      title: const Text('Poker Game'),
-    ),
-    body: Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Poker Game'),
+      ),
+      body: Stack(
         children: [
-          const Text(
-            'Player Cards:',
-            style: TextStyle(fontSize: 18),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: playerCards.map((card) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: Image.asset(
-                  card,
-                  width: 60,
-                  height: 90,
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const Text(
+                  'Player Cards:',
+                  style: TextStyle(fontSize: 18),
                 ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 10),
-          const Text(
-            'Generated Cards:',
-            style: TextStyle(fontSize: 18),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: generatedCards.map((card) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: Image.asset(
-                  card,
-                  width: 60,
-                  height: 90,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: playerCards.map((card) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Image.asset(
+                        card,
+                        width: 60,
+                        height: 90,
+                      ),
+                    );
+                  }).toList(),
                 ),
-              );
-            }).toList(),
-          ),
-          const SizedBox(height: 20),
-          // Display opponent's rating at the top right
-          Positioned(
-            top: 0,
-            right: 0,
-            child: Text(
-              'Opponent Rating: ${oppData['rating']}',
-              style: TextStyle(fontSize: 18),
+                const SizedBox(height: 10),
+                const Text(
+                  'Generated Cards:',
+                  style: TextStyle(fontSize: 18),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: generatedCards.map((card) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                      child: Image.asset(
+                        card,
+                        width: 60,
+                        height: 90,
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Player Actions:',
+                  style: TextStyle(fontSize: 18),
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: hasAction ? () => _userAction('call') : null,
+                      child: const Text('Call'),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: hasAction ? () => _userAction('raise', raiseAmount: int.parse(raiseController.text)) : null,
+                      child: const Text('Raise'),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: hasAction ? () => _userAction('fold') : null,
+                      child: const Text('Fold'),
+                    ),
+                    const SizedBox(width: 10),
+                    ElevatedButton(
+                      onPressed: hasAction ? () => _userAction('all_in', raiseAmount: playerData['pot']) : null,
+                      child: const Text('All In'),
+                    ),
+                  ],
+                ),
+                TextField(
+                  controller: raiseController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Raise Amount'),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 10),
-          // Display player's rating at the bottom left
+          // Display opponent's pot, rating, at the top right
           Positioned(
-            bottom: 0,
-            left: 0,
+            top: 16,
+            right: 16,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                const Text(
+                  'Opponent Rating:',
+                  style: TextStyle(fontSize: 18),
+                ),
+                Text(
+                  '${oppData['rating']}',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Opponent Pot:',
+                  style: TextStyle(fontSize: 18),
+                ),
+                Text(
+                  '${opponentData['pot']}',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+          ),
+          // Display player's pot, rating, at the bottom left
+          Positioned(
+            bottom: 16,
+            left: 16,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -363,41 +402,20 @@ Widget build(BuildContext context) {
                   '${userData['rating']}',
                   style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                 ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Your Pot:',
+                  style: TextStyle(fontSize: 18),
+                ),
+                Text(
+                  '${playerData['pot']}',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'Player Actions:',
-            style: TextStyle(fontSize: 18),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: hasAction ? () => _userAction('call') : null,
-                child: const Text('Call'),
-              ),
-              const SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: hasAction ? () => _userAction('raise', raiseAmount: int.parse(raiseController.text)) : null,
-                child: const Text('Raise'),
-              ),
-              const SizedBox(width: 10),
-              ElevatedButton(
-                onPressed: hasAction ? () => _userAction('fold') : null,
-                child: const Text('Fold'),
-              ),
-            ],
-          ),
-          TextField(
-            controller: raiseController,
-            keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Raise Amount'),
-          ),
         ],
       ),
-    ),
-  );
-}
+    );
+  }
 }

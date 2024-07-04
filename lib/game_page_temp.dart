@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:just_audio/just_audio.dart';
 import 'loading_page.dart';
 import 'main.dart';
+import 'dart:async';
+
 
 class GamePageTemp extends StatefulWidget {
   const GamePageTemp({Key? key, required this.userId, required this.matchId}) : super(key: key);
@@ -149,12 +151,21 @@ class _GamePageTempState extends State<GamePageTemp> {
       'newMatch': true,
     }, SetOptions(merge: true));
 
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => LoadingPage(userId: userId),
-      ),
-    );
+    Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
+      DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();
+
+      if (snapshot.exists && !(snapshot.data()!['newMatch'] ?? false)) {
+        timer.cancel();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+          builder: (context) => LoadingPage(userId: userId, matchId: snapshot.data()!['match_id'],),
+        ),
+        );
+      }
+    });
+
+    
   }
 
   void _redirectToMainPage(BuildContext context) async {
@@ -162,6 +173,8 @@ class _GamePageTempState extends State<GamePageTemp> {
       'inMatch': false,
       'newMatch': false,
     }, SetOptions(merge: true));
+
+
 
     Navigator.pushReplacement(
       context,

@@ -109,7 +109,8 @@ def create_match(user_pair):
             'turn': deck.draw(1),
             'river': deck.draw(1),
             'winner': None,
-            'round': 0
+            'round': 0,
+            'full': True
         }
 
         # Update each user's document with the match_id and their player role
@@ -138,6 +139,90 @@ def create_match(user_pair):
         logger.info(f"Match created with ID: {match_id} for users: {user_pair}, player1: {player1}, player2: {player2}")
     except Exception as e:
         logger.error(f"Error in create_match: {e}", exc_info=True)
+
+def find_or_create_match(user_id):
+    try:
+        # Find an existing match that is not full
+        matches_ref = db.collection('matches')
+        non_full_matches = matches_ref.where('full', '==', False).stream()
+        user_ref = db.collection('users').document(user_id)
+        # Fetch user ratings
+        user_doc = user_ref.get()
+        if not user_doc.exists:
+            logger.error(f"User does not exist: {user_id}")
+            return
+
+        rating = user_doc.get('rating')
+        pot = 0.01 * rating
+        if user_doc.get('pot') != 0:
+            pot = user_doc.get('pot')
+        user_raise = 0.02 * pot
+        pot -= user_raise
+        
+        for match in non_full_matches:
+            match_data = match.to_dict()
+            match_id = match.id
+            if 'player2' not in match_data:
+                # Join the match
+                db.collection('matches').document(match_id).update({
+                    'player2': {
+                        'id': user_id,
+                        'has_action': True,
+                        'fold': False,
+                        'raise': 0,
+                        'pot': 0,
+                        'action': None,
+                        'prev_actions': []
+                    },
+                    'full': True
+                })
+                user_ref = db.collection('users').document(user_id)
+                user_ref.update({
+                    'searchingForMatch': False,
+                    'inMatch': True,
+                    'newMatch': False,
+                    'match_id': match_id
+                })
+                return match_id
+
+        # No available match found, create a new one
+        deck = Deck()
+        player1_cards = deck.draw(2)
+        player2_cards = deck.draw(2)
+        logger.info(f"Cards dealt. Player 1 has {[Card.int_to_pretty_str(card) for card in player1_cards]}. Player 2 has {[Card.int_to_pretty_str(card) for card in player2_cards]}")
+
+        new_match_ref = db.collection('matches').add({
+            'player1': {
+                'id': user_id,
+                'cards': player1_cards,
+                'has_action': False,
+                'fold': False,
+                'raise': 0,
+                'pot': 0,
+                'action': None,
+                'prev_actions': []
+            },
+            'player2': {
+                'cards': player2_cards
+            },
+            'flop': deck.draw(3),
+            'turn': deck.draw(1),
+            'river': deck.draw(1),
+            'round': 0,
+            'full': False
+        })
+        user_ref = db.collection('users').document(user_id)
+        user_ref.update({
+            'searchingForMatch': False,
+            'inMatch': True,
+            'newMatch': False,
+            'match_id': new_match_ref[1].id
+        })
+        return new_match_ref[1].id
+
+    except Exception as e:
+        logger.error(f"Error in find_or_create_match: {e}", exc_info=True)
+        return None
 
 def on_user_update(event, context):
     searchingForMatch = False
@@ -182,12 +267,10 @@ def on_user_update(event, context):
     if searchingForMatch:
         user_doc = db.collection('users').document(user_id).get()
         if user_doc.exists and user_doc.get('searchingForMatch'):
-            matching_users = check_for_matching_users()
-            if len(matching_users) >= 2:
-                user_pair = matching_users[:2]  # Take the first two users
-                create_match(user_pair)
+            match_id = find_or_create_match(user_id)
+            if match_id:
+                logger.info(f"User {user_id} joined match {match_id}")
 
 # Main entry point for the Cloud Function
 def main(event, context):
     on_user_update(event, context)
-

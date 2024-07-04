@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/loading_page.dart';
 import 'game_page.dart';  
 import 'game_page_temp.dart';  
 import 'friends.dart';  
@@ -53,11 +54,11 @@ class _MyHomePageState extends State<MyHomePage> {
     Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
       DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();
 
-      if (snapshot.exists && !(snapshot.data()!['newMatch'] ?? true)) {
+      if (snapshot.exists && !(snapshot.data()!['newMatch'] ?? false)) {
         timer.cancel();
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => GamePage(userId: userId, matchId: snapshot.data()!['match_id'],)),
+          MaterialPageRoute(builder: (context) => LoadingPage(userId: userId, matchId: snapshot.data()!['match_id'],)),
         );
       }
     });

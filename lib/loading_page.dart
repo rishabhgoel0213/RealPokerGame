@@ -4,17 +4,19 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'game_page.dart';
 
 class LoadingPage extends StatefulWidget {
-  const LoadingPage({Key? key, required this.userId}) : super(key: key);
+  const LoadingPage({Key? key, required this.userId, required this.matchId}) : super(key: key);
 
   final String userId;
+  final String matchId;
 
   @override
-  _LoadingPageState createState() => _LoadingPageState(userId: userId);
+  _LoadingPageState createState() => _LoadingPageState(userId: userId, matchId: matchId);
 }
 
 class _LoadingPageState extends State<LoadingPage> {
-  _LoadingPageState({required this.userId});
+  _LoadingPageState({required this.userId, required this.matchId});
   final String userId;
+  final String matchId;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
@@ -25,9 +27,9 @@ class _LoadingPageState extends State<LoadingPage> {
 
   Future<void> _checkForNewGame() async {
     Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
-      DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();
+      DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('matches').doc(matchId).get();
 
-      if (snapshot.exists && !(snapshot.data()!['newMatch'] ?? true)) {
+      if (snapshot.exists && (snapshot.data()!['full'] ?? false)) {
         timer.cancel();
         Navigator.pushReplacement(
           context,
@@ -44,7 +46,7 @@ class _LoadingPageState extends State<LoadingPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: Center(
         child: CircularProgressIndicator(),
       ),

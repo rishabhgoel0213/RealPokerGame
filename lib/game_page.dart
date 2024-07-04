@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'loading_page.dart';
 import 'main.dart';
@@ -29,8 +28,6 @@ class _GamePageState extends State<GamePage> {
   late List<String> generatedCards = [];
   late int round;
   late bool hasAction = false;
-  late bool hadInitalAction = false;
-  T? cast<T>(x) => x is T ? x : null;
 
   final Map<num, String> cardMapping = {
     16787479: 'assets/cards/spade_ten.png',
@@ -116,7 +113,7 @@ class _GamePageState extends State<GamePage> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Game Over'),
+          title: const Text('Game Over'),
           content: Text('$winner won the game!'),
           actions: <Widget>[
             TextButton(
@@ -124,14 +121,14 @@ class _GamePageState extends State<GamePage> {
                 Navigator.of(context).pop();
                 _redirectToGamePage(context); // Navigate to a new game
               },
-              child: Text('New Game'),
+              child: const Text('New Game'),
             ),
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
                 _redirectToMainPage(context); // Navigate to main page
               },
-              child: Text('Quit'),
+              child: const Text('Quit'),
             ),
           ],
         );
@@ -145,12 +142,19 @@ void _redirectToGamePage(BuildContext context) async {
     'newMatch': true,
   }, SetOptions(merge: true));
 
-  Navigator.pushReplacement(
-    context,
-    MaterialPageRoute(
-      builder: (context) => LoadingPage(userId: userId),
-    ),
-  );
+  Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
+      DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();
+
+      if (snapshot.exists && !(snapshot.data()!['newMatch'] ?? false)) {
+        timer.cancel();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+          builder: (context) => LoadingPage(userId: userId, matchId: snapshot.data()!['match_id'],),
+        ),
+        );
+      }
+    });
 }
 
   void _redirectToMainPage(BuildContext context) async {
@@ -169,7 +173,7 @@ void _redirectToGamePage(BuildContext context) async {
 
 
   Future<void> _initGame() async {
-    matchSnapshot = await _firestore.collection('matches').doc(matchId).get() as DocumentSnapshot<Map<String, dynamic>>;
+    matchSnapshot = await _firestore.collection('matches').doc(matchId).get();
     final data = matchSnapshot.data();
     if (data != null) {
       final player1 = data['player1'];
@@ -177,17 +181,9 @@ void _redirectToGamePage(BuildContext context) async {
       if (player1['id'] == userId) {
         playerData = player1;
         opponentData = player2;
-        if(data['inital_action'] == 'player1')
-        {
-          hadInitalAction = true;
-        }
       } else {
         playerData = player2;
         opponentData = player1;
-        if(data['inital_action'] == 'player2')
-        {
-          hadInitalAction = true;
-        }
       }
 
       List<dynamic> playerCardNums = playerData['cards'];
@@ -250,81 +246,87 @@ void _redirectToGamePage(BuildContext context) async {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Poker Game'),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          children: [
-            const Text(
-              'Player Cards:',
-              style: TextStyle(fontSize: 18),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: playerCards.map((card) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: Image.asset(
-                    card,
-                    width: 60,
-                    height: 90,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 10),
-            const Text(
-              'Generated Cards:',
-              style: TextStyle(fontSize: 18),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: generatedCards.map((card) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: Image.asset(
-                    card,
-                    width: 60,
-                    height: 90,
-                  ),
-                );
-              }).toList(),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Player Actions:',
-              style: TextStyle(fontSize: 18),
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: hasAction ? () => _userAction('call') : null,
-                  child: const Text('Call'),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: hasAction ? () => _userAction('raise', raiseAmount: int.parse(raiseController.text)) : null,
-                  child: const Text('Raise'),
-                ),
-                const SizedBox(width: 10),
-                ElevatedButton(
-                  onPressed: hasAction ? () => _userAction('fold') : null,
-                  child: const Text('Fold'),
-                ),
-              ],
-            ),
-            TextField(
-              controller: raiseController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Raise Amount'),
-            ),
-          ],
+    // ignore: deprecated_member_use
+    return WillPopScope(
+      onWillPop: () async {
+        return false;
+        }, 
+        child : Scaffold(
+        appBar: AppBar(
+          title: const Text('Poker Game'),
         ),
-      ),
+        body: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              const Text(
+                'Player Cards:',
+                style: TextStyle(fontSize: 18),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: playerCards.map((card) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Image.asset(
+                      card,
+                      width: 60,
+                      height: 90,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Generated Cards:',
+                style: TextStyle(fontSize: 18),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: generatedCards.map((card) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: Image.asset(
+                      card,
+                      width: 60,
+                      height: 90,
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20),
+              const Text(
+                'Player Actions:',
+                style: TextStyle(fontSize: 18),
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: hasAction ? () => _userAction('call') : null,
+                    child: const Text('Call'),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: hasAction ? () => _userAction('raise', raiseAmount: int.parse(raiseController.text)) : null,
+                    child: const Text('Raise'),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: hasAction ? () => _userAction('fold') : null,
+                    child: const Text('Fold'),
+                  ),
+                ],
+              ),
+              TextField(
+                controller: raiseController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Raise Amount'),
+              ),
+            ],
+          ),
+        ),
+      )
     );
   }
 }

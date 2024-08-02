@@ -58,7 +58,7 @@ class _MyHomePageState extends State<MyHomePage> {
         timer.cancel();
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => LoadingPage(userId: userId, matchId: snapshot.data()!['match_id'],)),
+          MaterialPageRoute(builder: (context) => LoadingPage(userId: userId)),
         );
       }
     });

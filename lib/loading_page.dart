@@ -4,19 +4,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'game_page.dart';
 
 class LoadingPage extends StatefulWidget {
-  const LoadingPage({Key? key, required this.userId, required this.matchId}) : super(key: key);
+  const LoadingPage({Key? key, required this.userId}) : super(key: key);
 
   final String userId;
-  final String matchId;
 
   @override
-  _LoadingPageState createState() => _LoadingPageState(userId: userId, matchId: matchId);
+  _LoadingPageState createState() => _LoadingPageState(userId: userId);
 }
 
 class _LoadingPageState extends State<LoadingPage> {
-  _LoadingPageState({required this.userId, required this.matchId});
+  _LoadingPageState({required this.userId});
   final String userId;
-  final String matchId;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   @override
@@ -27,16 +25,17 @@ class _LoadingPageState extends State<LoadingPage> {
 
   Future<void> _checkForNewGame() async {
     Timer.periodic(const Duration(seconds: 1), (Timer timer) async {
-      DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('matches').doc(matchId).get();
+      DocumentSnapshot<Map<String, dynamic>> snapshot = await _firestore.collection('users').doc(userId).get();
 
-      if (snapshot.exists && (snapshot.data()!['full'] ?? false)) {
+      if (snapshot.exists && !(snapshot.data()!['searchingForMatch'] ?? true)) {
         timer.cancel();
+        DocumentSnapshot<Map<String, dynamic>> matchSnapshot = await _firestore.collection('users').doc(userId).get();
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (context) => GamePage(
               userId: userId,
-              matchId: snapshot.data()!['match_id'],
+              matchId: matchSnapshot.data()!['match_id'],
             ),
           ),
         );

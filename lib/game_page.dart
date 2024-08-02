@@ -147,11 +147,9 @@ void _redirectToGamePage(BuildContext context) async {
 
       if (snapshot.exists && !(snapshot.data()!['newMatch'] ?? false)) {
         timer.cancel();
-        Navigator.pushReplacement(
+        Navigator.push(
           context,
-          MaterialPageRoute(
-          builder: (context) => LoadingPage(userId: userId, matchId: snapshot.data()!['match_id'],),
-        ),
+          MaterialPageRoute(builder: (context) => LoadingPage(userId: userId)),
         );
       }
     });

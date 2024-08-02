@@ -144,7 +144,6 @@ def find_or_create_match(user_id):
     try:
         # Find an existing match that is not full
         matches_ref = db.collection('matches')
-        non_full_matches = matches_ref.where('full', '==', False).stream()
         user_ref = db.collection('users').document(user_id)
         # Fetch user ratings
         user_doc = user_ref.get()
@@ -159,31 +158,29 @@ def find_or_create_match(user_id):
         user_raise = 0.02 * pot
         pot -= user_raise
         
+        non_full_matches = matches_ref.where('full', '==', False).stream()
         for match in non_full_matches:
             match_data = match.to_dict()
             match_id = match.id
-            if 'player2' not in match_data:
-                # Join the match
-                db.collection('matches').document(match_id).update({
-                    'player2': {
-                        'id': user_id,
-                        'has_action': True,
-                        'fold': False,
-                        'raise': 0,
-                        'pot': 0,
-                        'action': None,
-                        'prev_actions': []
-                    },
-                    'full': True
-                })
-                user_ref = db.collection('users').document(user_id)
-                user_ref.update({
-                    'searchingForMatch': False,
-                    'inMatch': True,
-                    'newMatch': False,
-                    'match_id': match_id
-                })
-                return match_id
+            # Join the match
+            db.collection('matches').document(match_id).update({
+                'player2.id': user_id,
+                'player2.has_action': True,
+                'player2.fold': False,
+                'player2.raise': 0,
+                'player2.pot': 0,
+                'player2.action': None,
+                'player2.prev_actions': [],
+                'full': True
+            })
+            user_ref = db.collection('users').document(user_id)
+            user_ref.update({
+                'searchingForMatch': False,
+                'inMatch': True,
+                'newMatch': False,
+                'match_id': match_id
+            })
+            return match_id
 
         # No available match found, create a new one
         deck = Deck()
@@ -230,9 +227,11 @@ def on_user_update(event, context):
     
     if not event["value"]["fields"]["inMatch"]["booleanValue"]:
         user_data = db.collection('users').document(user_id).get().to_dict()
+        searching_users = db.collection('searching').document('searching').get().to_dict()
         if not user_data['inMatch']:
             match_id = user_data['match_id']
             user_ref = db.collection('users').document(user_id)
+            searching_ref = db.collection('searching').document('searching')
             match_ref = db.collection('matches').document(match_id)
             match_doc = match_ref.get()
             if match_doc.exists:
@@ -244,9 +243,14 @@ def on_user_update(event, context):
                 searchingForMatch = True
                 user_ref.update({
                     'match_id': None,
+                    'newMatch': False,
                     'searchingForMatch': True,
                     'pot': user_doc.get('pot')
                 })
+                searching_ref.update({
+                    'searching': list(set(searching_users['searching'] + [user_id]))
+                })
+
             else:
                 user_ref.update({
                     'rating': user_data['rating'] + user_doc.get('pot'),
@@ -264,12 +268,12 @@ def on_user_update(event, context):
                     match_ref.delete()
                     logger.info(f"Deleted match with ID: {match_id}")
 
-    if searchingForMatch:
-        user_doc = db.collection('users').document(user_id).get()
-        if user_doc.exists and user_doc.get('searchingForMatch'):
-            match_id = find_or_create_match(user_id)
-            if match_id:
-                logger.info(f"User {user_id} joined match {match_id}")
+    # if searchingForMatch:
+    #     user_doc = db.collection('users').document(user_id).get()
+    #     if user_doc.exists and user_doc.get('searchingForMatch'):
+    #         match_id = find_or_create_match(user_id)
+    #         if match_id:
+    #             logger.info(f"User {user_id} joined match {match_id}")
 
 # Main entry point for the Cloud Function
 def main(event, context):
